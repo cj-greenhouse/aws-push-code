@@ -77,7 +77,7 @@ fn zipd<T>(writer: T, prefix: &str, it: &mut Iterator<Item=DirEntry>) -> zip::re
             f.read_to_end(&mut buffer)?;
             zip.write_all(&*buffer)?;
             buffer.clear();
-        } else {
+        } else if name.as_os_str().len() != 0 {
             zip.add_directory_from_path(name, options)?;
         }
     }
@@ -87,7 +87,6 @@ fn zipd<T>(writer: T, prefix: &str, it: &mut Iterator<Item=DirEntry>) -> zip::re
 
 fn zip(dir: &str, arch: &str) -> zip::result::ZipResult<()> {
 
-
     if !Path::new(dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -96,6 +95,27 @@ fn zip(dir: &str, arch: &str) -> zip::result::ZipResult<()> {
     let arch = File::create(&arch)?;
 
     let walk = WalkDir::new(dir.to_string()).into_iter();
-    zipd(arch, dir, &mut walk.filter_map(|e| e.ok()))
+    zipd(arch, dir, &mut walk.filter_map(|e| {
+        match e {
+            Ok(entry) => {
+                let path = entry.path();
+                let name = path.strip_prefix(Path::new(dir)).unwrap();
+                let name = name.to_str()?;
+                if name != ".git" && (name.len() < 5 || &name[0..5] != ".git/") {
+                    println!("adding {}", name);
+                    Some(entry)
+                } else {
+                    None
+                }
+                // println!("{:?}", &name[0..0]);
+                // // if entry.path().to_string().mat != ".git" {
+                //     Some(entry)
+                // // } else {
+                // //     None
+                // // }
+            },
+            _ => None
+        }
+    }))
 
 }
