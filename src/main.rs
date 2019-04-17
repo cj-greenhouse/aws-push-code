@@ -1,6 +1,14 @@
 use git2::{RemoteCallbacks, FetchOptions, Cred, Error, Oid};
 use git2::build::{RepoBuilder, CheckoutBuilder};
+use std::fs::{File};
+use std::io::prelude::*;
+use std::io::{Write, Seek};
+use std::iter::Iterator;
 use std::path::Path;
+use walkdir::{WalkDir, DirEntry};
+use zip::{ZipWriter, CompressionMethod};
+use zip::result::ZipError;
+use zip::write::FileOptions;
 
 fn main() {
     let dir = "./deleteme-repo";
@@ -9,6 +17,7 @@ fn main() {
     // let target = "thebranch";
     let target = "thetag";
     pull(dir, "git@gitlab.cj.com:gwiley/cj.git", target).unwrap();
+    zip(dir, "sources.zip");
 }
 
 
@@ -24,12 +33,8 @@ fn pull(dir: &str, url: &str, target: &str) -> Result<(), Error> {
     builder.fetch_options(fetch_options);
     let repo = builder.clone(url, Path::new(dir))?;
 
-
     let mut co = CheckoutBuilder::new();
     co.force();
-
-
-
 
     let commit = if let Ok(oid) = Oid::from_str(target) {
         repo.find_commit(oid)
@@ -44,24 +49,6 @@ fn pull(dir: &str, url: &str, target: &str) -> Result<(), Error> {
     let obj = commit.as_object();
     repo.checkout_tree(&obj, Some(&mut co))
 
-
-    // let target = repo.find_reference(target)?;
-
-    // // let target = repo.find_reference(target)?;
-    // let commit = target.peel_to_commit()?;
-
-
-    // let branch_name = "__SUBMISSION";
-    // let branch = repo.branch(branch_name, &commit, false)?;
-    // let branch_ref = branch.get();
-    // let branch_tree = branch_ref.peel_to_tree()?;
-    // let branch_obj = branch_tree.as_object();
-    // repo.checkout_tree(&branch_obj, Some(&mut co))?;
-    // repo.set_head(branch_ref.name().unwrap())?;
-
-    // repo.set_head_detached(oid)
-
-    // Ok(())
 }
 
 fn greg() -> Result<Cred, Error> {
@@ -73,5 +60,42 @@ fn greg() -> Result<Cred, Error> {
     )
 }
 
+fn zipd<T>(writer: T, prefix: &str, it: &mut Iterator<Item=DirEntry>) -> zip::result::ZipResult<()>
+    where T: Write+Seek {
+
+    let mut zip = ZipWriter::new(writer);
+    let options = FileOptions::default()
+        .compression_method(CompressionMethod::Deflated);
+
+    let mut buffer = Vec::new();
+    for entry in it {
+        let path = entry.path();
+        let name = path.strip_prefix(Path::new(prefix)).unwrap();
+        if path.is_file() {
+            zip.start_file_from_path(name, options)?;
+            let mut f = File::open(path)?;
+            f.read_to_end(&mut buffer)?;
+            zip.write_all(&*buffer)?;
+            buffer.clear();
+        } else {
+            zip.add_directory_from_path(name, options)?;
+        }
+    }
+    zip.finish()?;
+    Ok(())
+}
+
+fn zip(dir: &str, arch: &str) -> zip::result::ZipResult<()> {
 
 
+    if !Path::new(dir).is_dir() {
+        return Err(ZipError::FileNotFound);
+    }
+
+    let arch = Path::new(arch);
+    let arch = File::create(&arch)?;
+
+    let walk = WalkDir::new(dir.to_string()).into_iter();
+    zipd(arch, dir, &mut walk.filter_map(|e| e.ok()))
+
+}
