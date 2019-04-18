@@ -1,5 +1,7 @@
 use git2::{RemoteCallbacks, FetchOptions, Cred, Error, Oid};
 use git2::build::{RepoBuilder, CheckoutBuilder};
+use rusoto_core::{*};
+use rusoto_secretsmanager::{GetSecretValueRequest, *};
 use std::fs::{File};
 use std::io::prelude::*;
 use std::io::{Write, Seek};
@@ -17,10 +19,24 @@ fn main() {
     // let target = "thebranch";
     let target = "thetag";
     pull(dir, "git@gitlab.cj.com:gwiley/cj.git", target).unwrap();
-    zip(dir, "sources.zip");
+    zip(dir, "sources.zip").unwrap();
+}
+
+fn secret() -> Option<String> {
+    std::env::var("GLPK").ok()
 }
 
 
+fn secret_aws() -> Option<String> {
+
+    let secrets = SecretsManagerClient::new(Region::default());
+    let request = GetSecretValueRequest {secret_id: "cj-deploy-key".to_string(), ..Default::default()};
+
+    let response = secrets.get_secret_value(request).sync().ok()?;
+    println!("{:?}", response);
+    response.secret_string
+
+}
 
 
 fn pull(dir: &str, url: &str, target: &str) -> Result<(), Error> {
@@ -28,7 +44,8 @@ fn pull(dir: &str, url: &str, target: &str) -> Result<(), Error> {
     let mut callbacks = RemoteCallbacks::new();
     let mut fetch_options = FetchOptions::new();
 
-    callbacks.credentials(|_, _, _| greg());
+    callbacks.credentials(|_, _, _| deploykey());
+    // callbacks.credentials(|_, _, _| greg());
     fetch_options.remote_callbacks(callbacks);
     builder.fetch_options(fetch_options);
     let repo = builder.clone(url, Path::new(dir))?;
@@ -59,6 +76,12 @@ fn greg() -> Result<Cred, Error> {
         None
     )
 }
+
+fn deploykey() -> Result<Cred, Error> {
+    let pk = secret_aws().unwrap();
+    Cred::ssh_key_from_memory("git", None, &pk[..], None)
+}
+
 
 fn zipd<T>(writer: T, prefix: &str, it: &mut Iterator<Item=DirEntry>) -> zip::result::ZipResult<()>
     where T: Write+Seek {
@@ -102,7 +125,6 @@ fn zip(dir: &str, arch: &str) -> zip::result::ZipResult<()> {
                 let name = path.strip_prefix(Path::new(dir)).unwrap();
                 let name = name.to_str()?;
                 if name != ".git" && (name.len() < 5 || &name[0..5] != ".git/") {
-                    println!("adding {}", name);
                     Some(entry)
                 } else {
                     None
