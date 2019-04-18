@@ -153,6 +153,9 @@ fn zipd<T>(writer: T, prefix: &str, it: &mut Iterator<Item=DirEntry>) -> zip::re
             zip.add_directory_from_path(name, options)?;
         }
     }
+    zip.start_file_from_path(Path::new("cjbuildinfo.json"), options)?;
+    let buildinfo = format!("{{\"commit\":\"{}\"}}", "abc12349024");
+    zip.write_all(buildinfo.as_bytes())?;
     zip.finish()?;
     Ok(())
 }
