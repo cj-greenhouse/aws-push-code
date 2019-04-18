@@ -1,0 +1,15 @@
+[package]
+name = "aws-push-code"
+version = "0.1.0"
+authors = ["Greg Wiley <aztec.rex@jammm.com>"]
+edition = "2018"
+
+[dependencies]
+futures = "0.1.26"
+futures-fs = "0.0.5"
+git2 = "0.8.0"
+rusoto_core = "0.37.0"
+rusoto_s3 = "0.37.0"
+rusoto_secretsmanager = "0.37.0"
+walkdir = "2"
+zip = "0.5.2"
