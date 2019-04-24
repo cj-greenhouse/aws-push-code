@@ -1,12 +1,10 @@
 use crate::effect::repo::Git;
 use crate::effect::file::{FileSystem};
 
-use std::collections::{HashSet};
-use std::path::{Path, PathBuf};
 
 
 
-pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, s3_bucket: &str, s3_key: &str) -> Result<(), E>
+pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, _s3_bucket: &str, _s3_key: &str) -> Result<(), E>
     where   T: FileSystem + Git,
             E: From<T::FileSystemError> + From<T::GitError>
 {
@@ -20,6 +18,8 @@ pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, s3_bucket: &str, s3
 mod tests {
 
     use super::*;
+    use std::collections::{HashSet};
+    use std::path::{Path, PathBuf};
 
     struct R<'a>(PathBuf, HashSet<(&'a str, &'a str)>);
     type E = String;
