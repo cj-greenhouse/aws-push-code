@@ -2,6 +2,25 @@ use crate::effect::repo::Git;
 use crate::effect::file::{FileSystem};
 
 
+pub trait PipelineError {
+    type PipelineError;
+}
+
+pub trait Pipeline<E>
+{
+    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), E> {unimplemented!();}
+}
+
+impl<T> Pipeline<T::PipelineError> for T
+where   T: FileSystem + Git + PipelineError,
+        T::PipelineError: From<T::GitError> + From<T::FileSystemError> {
+    fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), <T as PipelineError>::PipelineError> {
+        let path = self.mk_temp_dir()?;
+        let created = self.clone_repo(repo_url, &path )?;
+        Ok(created)
+    }
+
+}
 
 
 pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, _s3_bucket: &str, _s3_key: &str) -> Result<(), E>
@@ -22,7 +41,7 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     struct R<'a>(PathBuf, HashSet<(&'a str, &'a str)>);
-    type E = String;
+    impl PipelineError for R<'_> {type PipelineError = String;}
 
     impl<'a> FileSystem for R<'a> {
         type FileSystemError = String;
@@ -30,6 +49,7 @@ mod tests {
             Ok(self.0.clone())
         }
     }
+
 
     impl<'a> Git for R<'a> {
         type GitError = String;
@@ -48,7 +68,8 @@ mod tests {
         let r = R(PathBuf::from(DIR), [(REPO, DIR)].iter().cloned().collect());
 
 
-        let actual = submit_to_pipeline::<R, E>(&r, REPO, "", "");
+        let actual = r.submit_to_pipeline(REPO, "", "");
+        // let actual = submit_to_pipeline::<R, E>(&r, REPO, "", "");
 
         assert_eq!(actual, Ok(()));
     }

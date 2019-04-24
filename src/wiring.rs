@@ -1,5 +1,6 @@
 use crate::effect::repo::Git;
 use crate::effect::file::FileSystem;
+use crate::submit::Pipeline;
 
 pub type Runtime = String;
 pub type RuntimeError = String;
@@ -16,3 +17,5 @@ impl Git for Runtime {
 impl FileSystem for Runtime {
     type FileSystemError = String;
 }
+
+impl Pipeline<RuntimeError> for Runtime {}
