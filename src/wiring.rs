@@ -1,5 +1,5 @@
-use crate::repo::Git;
-use crate::file::{FileSystem};
+use crate::effect::repo::Git;
+use crate::effect::file::FileSystem;
 
 pub type Runtime = String;
 pub type RuntimeError = String;

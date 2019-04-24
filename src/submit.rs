@@ -1,5 +1,5 @@
-use crate::repo::Git;
-use crate::file::{FileSystem};
+use crate::effect::repo::Git;
+use crate::effect::file::{FileSystem};
 
 use std::collections::{HashSet};
 use std::path::{Path, PathBuf};
