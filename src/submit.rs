@@ -22,7 +22,6 @@ where   T: FileSystem + Git + PipelineError,
 
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -59,7 +58,6 @@ mod tests {
 
 
         let actual = r.submit_to_pipeline(REPO, "", "");
-        // let actual = submit_to_pipeline::<R, E>(&r, REPO, "", "");
 
         assert_eq!(actual, Ok(()));
     }
