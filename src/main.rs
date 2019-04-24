@@ -2,6 +2,7 @@ mod flow;
 mod wiring;
 mod exec;
 mod repo;
+mod file;
 
 use git2::{RemoteCallbacks, FetchOptions, Cred, Error, Oid};
 use git2::build::{RepoBuilder, CheckoutBuilder};

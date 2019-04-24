@@ -1,5 +1,5 @@
 use crate::repo::Git;
-use crate::flow::{MkTemp};
+use crate::file::{FileSystem};
 
 pub type Runtime = String;
 pub type RuntimeError = String;
@@ -13,16 +13,6 @@ impl Git for Runtime {
     type GitError = String;
 }
 
-impl MkTemp for Runtime {
-    type MkTempError = String;
+impl FileSystem for Runtime {
+    type FileSystemError = String;
 }
-
-
-
-// impl CodeRepository for Runtime where {
-//     type Error = String;
-//     type Handle = String;
-//     fn pull_repository(_url: &str) -> Result<Self::Handle, Self::Error> {
-//         unimplemented!();
-//     }
-// }
