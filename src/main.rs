@@ -2,9 +2,10 @@ mod submit;
 mod wiring;
 pub mod effect;
 
-use crate::wiring::{Runtime, RuntimeError};
+use crate::submit::Pipeline;
 
 pub fn main() {
-    let wiring = wiring::wire();
-    submit::submit_to_pipeline::<Runtime, RuntimeError>(&wiring, "","","").unwrap();
+    wiring::wire()
+        .submit_to_pipeline("","","")
+        .unwrap();
 }

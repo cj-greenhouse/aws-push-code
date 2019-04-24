@@ -23,16 +23,6 @@ where   T: FileSystem + Git + PipelineError,
 }
 
 
-pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, _s3_bucket: &str, _s3_key: &str) -> Result<(), E>
-    where   T: FileSystem + Git,
-            E: From<T::FileSystemError> + From<T::GitError>
-{
-    let path = runtime.mk_temp_dir()?;
-    runtime.clone_repo(repo_url, &path)?;
-    Ok(())
-}
-
-
 #[cfg(test)]
 mod tests {
 
