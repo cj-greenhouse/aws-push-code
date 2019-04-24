@@ -1,10 +1,9 @@
 
+use std::path::Path;
 
-pub trait CodeRepository {
-    type Error: std::fmt::Debug;
-    type Handle;
-    fn pull_repository(url: &str) -> Result<Self::Handle, Self::Error>;
+
+pub trait Git {
+    type GitError;
+    fn clone(from: &str, to: &Path) -> Result<(), Self::GitError> {unimplemented!();}
 }
-
-
 
