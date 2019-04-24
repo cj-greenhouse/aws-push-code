@@ -5,7 +5,7 @@ pub type Runtime = String;
 pub type RuntimeError = String;
 
 pub fn wire() -> Runtime {
-    unimplemented!();
+    "".to_owned()
 }
 
 

@@ -13,7 +13,7 @@ use std::io;
 
 pub trait MkTemp {
     type MkTempError;
-    fn mk_temp_dir() -> Result<PathBuf, Self::MkTempError> {unimplemented!();}
+    fn mk_temp_dir(&self) -> Result<PathBuf, Self::MkTempError> {unimplemented!();}
 }
 
 // pub trait Store {
@@ -54,13 +54,12 @@ pub trait MkTemp {
 
 
 
-
-pub fn submit_to_pipeline<T, E>(repo_url: &str, s3_bucket: &str, s3_key: &str) -> Result<(), E>
+pub fn submit_to_pipeline<T, E>(runtime: &T, repo_url: &str, s3_bucket: &str, s3_key: &str) -> Result<(), E>
     where   T: MkTemp + Git,
             E: From<T::MkTempError> + From<T::GitError>
 {
-    let path = T::mk_temp_dir()?;
-    let repo = T::clone(repo_url, &path)?;
+    let path = runtime.mk_temp_dir()?;
+    runtime.clone_repo(repo_url, &path)?;
     Ok(())
 }
 
@@ -105,14 +104,23 @@ mod tests {
 
     use super::*;
 
-    struct R<'a>(HashMap<&'a str, PathBuf>, HashSet<(&'a str, &'a str)>);
+    struct R<'a>(PathBuf, HashSet<(&'a str, &'a str)>);
     type E = String;
 
     impl<'a> MkTemp for R<'a> {
         type MkTempError = String;
-        fn mk_temp_dir() -> Result<PathBuf, String> {
+        fn mk_temp_dir(&self) -> Result<PathBuf, String> {
+            Ok(self.0.clone())
+        }
+    }
 
-            unimplemented!();
+    impl<'a> Git for R<'a> {
+        type GitError = String;
+        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), String> {
+            if ! self.1.contains(&(from,to.to_str().unwrap())) {
+                panic!("unexpected clone parameters")
+            }
+            Ok(())
         }
     }
 
@@ -120,11 +128,10 @@ mod tests {
     fn happy() {
         const REPO: &str = "git@foo:thingbarnone";
         const DIR: &str = "X29304";
+        let r = R(PathBuf::from(DIR), [(REPO, DIR)].iter().cloned().collect());
 
-        impl MkTemp for R {type MkTempError = E; fn mk_temp_dir() -> Result<PathBuf, E> {Ok(From::from(DIR.to_owned()))}}
-        impl Git for R {type GitError = E; fn clone(_: &str, _: &Path) -> Result<(), E> {Ok(())} }
 
-        let actual = submit_to_pipeline::<R,E>(REPO, "", "");
+        let actual = submit_to_pipeline::<R, E>(&r, REPO, "", "");
 
         assert_eq!(actual, Ok(()));
     }

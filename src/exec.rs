@@ -1,6 +1,7 @@
-use crate::wiring::{Runtime, RuntimeError};
+use crate::wiring::{self, Runtime, RuntimeError};
 use crate::flow;
 
 pub fn exec() {
-    flow::submit_to_pipeline::<Runtime, RuntimeError>("","","").unwrap();
+    let wiring = wiring::wire();
+    flow::submit_to_pipeline::<Runtime, RuntimeError>(&wiring, "","","").unwrap();
 }
