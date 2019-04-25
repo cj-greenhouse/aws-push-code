@@ -4,8 +4,8 @@ pub mod effect;
 
 use crate::submit::Pipeline;
 
-pub fn main() {
-    wiring::wire()
-        .submit_to_pipeline("","","")
-        .unwrap();
+pub fn main() { unimplemented!();
+    // wiring::wire()
+    //     .submit_to_pipeline("","","")
+    //     .unwrap();
 }
