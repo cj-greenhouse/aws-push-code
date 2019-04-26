@@ -23,7 +23,8 @@ pub struct PipelineT<GE, G, FSE, FS, E> {
 impl<GE, G, FSE, FS, E> PipelineT<GE, G, FSE, FS, E> {
     pub fn new(git: G, fs: FS) -> Self {
         PipelineT {
-            git, fs,
+            git,
+            fs,
             git_error: std::marker::PhantomData,
             fs_error: std::marker::PhantomData,
             error: std::marker::PhantomData,
