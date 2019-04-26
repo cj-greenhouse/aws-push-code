@@ -1,97 +1,96 @@
 
-use std::error;
-use std::fmt;
 
-use crate::effect::repo::{Git};
-use crate::effect::file::{FileSystem};
+use crate::effect::repo::*;
+use crate::effect::file::*;
 
 
 pub trait PipelineError {}
 
-pub trait Pipeline {
-    type Error: PipelineError + error::Error + Sized;
-    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {unimplemented!();}
+pub trait Pipeline<E>
+    where E: PipelineError {
+    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), E> {unimplemented!();}
 }
 
 
+pub struct PipelineT<GE, G, FSE, FS, E> {
+    git: G,
+    fs: FS,
+    git_error: std::marker::PhantomData<GE>,
+    fs_error: std::marker::PhantomData<FSE>,
+    error: std::marker::PhantomData<E>,
+}
 
-// #[derive(Debug)]
-// pub enum PERR<T: FileSystem + Git> {
-//     GError(<T as Git>::Error),
-//     FSError(<T as FileSystem>::Error),
-// }
+impl<GE, G, FSE, FS, E> PipelineT<GE, G, FSE, FS, E> {
+    pub fn new(git: G, fs: FS) -> Self {
+        PipelineT {
+            git, fs,
+            git_error: std::marker::PhantomData,
+            fs_error: std::marker::PhantomData,
+            error: std::marker::PhantomData,
+        }
+    }
+}
 
-// impl<T: FileSystem + Git> fmt::Display for PERR<T> {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             PERR::GError(e) => write!(f, "Git Error: {}", e),
-//             PERR::FSError(e) => write!(f, "FS Error: {}", e),
-//         }
-//     }
-// }
+impl<GE, G, FSE, FS, E> Pipeline<E> for PipelineT<GE, G, FSE, FS, E>
+where
+        G: Git<GE>,
+        GE: GitError,
+        FS: FileSystem<FSE>,
+        FSE: FileSystemError,
+        E:
+            From<GE> +
+            From<FSE> +
+            PipelineError
+    {
+    fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), E> {
+        let path = self.fs.mk_temp_dir()?;
+        let created = self.git.clone_repo(repo_url, &path )?;
+        Ok(created)
+    }
 
-// impl<T: FileSystem + Git> PipelineError for PERR<T> {}
-// impl error::Error for PipelineError {}
+}
 
+#[cfg(test)]
+mod tests {
 
+    use super::*;
+    use std::collections::{HashSet};
+    use std::path::{Path, PathBuf};
+    use crate::effect::repo::GitError;
+    use crate::effect::file::FileSystemError;
 
+    struct FS(PathBuf);
+    impl FileSystemError for String {}
+    impl FileSystem<String> for FS {
+        fn mk_temp_dir(&self) -> Result<PathBuf, String> {
+            Ok(self.0.clone())
+        }
+    }
 
-// impl<T: FileSystem + Git> Pipeline for T
-// where
-//     // <Self as Git>::Error: Into<<Self as Pipeline>::Error>,
-//     // <Self as FileSystem>::Error: Into<<Self as Pipeline>::Error>,
-//     <Self as Pipeline>::Error: From<<Self as Git>::Error> + From<<Self as Git>::Error>
-// {
-//     fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), <T as Pipeline>::Error> {
-//         let path = self.mk_temp_dir()?;
-//         let created = self.clone_repo(repo_url, &path )?;
-//         Ok(created)
-//     }
+    struct G(HashSet<(String, String)>);
+    impl GitError for String {}
+    impl Git<String> for G {
+        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), String> {
+            if ! self.0.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
+                panic!("unexpected clone parameters")
+            }
+            Ok(())
+        }
+    }
 
-// }
+    impl PipelineError for String {}
 
+    #[test]
+    fn happy() {
+        let repo = "git@foo:thingbarnone";
+        let dir = "X29304";
+        let fs = FS(PathBuf::from(dir));
+        let git = G([(repo.to_owned(), dir.to_owned())].iter().cloned().collect());
+        let r: PipelineT<String, G, String, FS, String> = PipelineT::new(git, fs);
 
+        let actual = r.submit_to_pipeline(repo, "", "");
 
-// #[cfg(test)]
-// mod tests {
-
-//     use super::*;
-//     use std::collections::{HashSet};
-//     use std::path::{Path, PathBuf};
-
-//     struct R<'a>(PathBuf, HashSet<(&'a str, &'a str)>);
-//     impl PipelineError for R<'_> {type PipelineError = String;}
-
-//     impl<'a> FileSystem for R<'a> {
-//         type FileSystemError = String;
-//         fn mk_temp_dir(&self) -> Result<PathBuf, String> {
-//             Ok(self.0.clone())
-//         }
-//     }
-
-//     impl<'a> Git for R<'a> {
-//         type GitError = String;
-//         fn clone_public_repo(&self, from: &str, to: &Path) -> GitEffect {
-//             if ! self.1.contains(&(from,to.to_str().unwrap())) {
-//                 panic!("unexpected clone parameters")
-//             }
-//             Ok(())
-//         }
-//     }
-
-//     impl From<Box<dyn GitError>> for String {
-//         fn from(e: Box<dyn GitError>) -> String {format!("Git Error {}", e)}
-//     }
-
-//     #[test]
-//     fn happy() {
-//         const REPO: &str = "git@foo:thingbarnone";
-//         const DIR: &str = "X29304";
-//         let r = R(PathBuf::from(DIR), [(REPO, DIR)].iter().cloned().collect());
-
-//         let actual = r.submit_to_pipeline(REPO, "", "");
-
-//         assert_eq!(actual, Ok(()));
-//     }
-// }
+        assert_eq!(actual, Ok(()));
+    }
+}
 
