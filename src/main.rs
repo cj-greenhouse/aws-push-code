@@ -3,6 +3,8 @@ mod wiring;
 pub mod effect;
 
 
+use crate::submit::Submit;
+
 pub fn main() {
-    submit::submit_to_pipeline::<wiring::Runtime, ()>(&wiring::wire(), "", "", "").unwrap();
+    wiring::wire().submit_to_pipeline("", "", "").unwrap();
 }

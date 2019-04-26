@@ -2,6 +2,11 @@ use crate::effect::repo::*;
 use crate::effect::file::*;
 
 
+pub trait Submit {
+    type Error;
+    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {unimplemented!();}
+}
+
 pub fn submit_to_pipeline<RT, E>(runtime: &RT, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), E>
     where
         RT: Git + FileSystem,
