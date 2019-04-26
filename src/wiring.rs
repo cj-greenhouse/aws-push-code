@@ -1,20 +1,18 @@
 use crate::effect::repo::Git;
 use crate::effect::file::FileSystem;
-use crate::submit::Pipeline;
 
-// pub type Runtime = ();
+pub type Runtime = ();
 
-// pub fn wire() -> Runtime {
-//     ()
-// }
+pub fn wire() -> Runtime {
+    ()
+}
 
 
-// impl Git for Runtime {
-//     type Error = String;
-// }
+impl Git for Runtime {
+    type Error = ();
+}
 
-// impl FileSystem for Runtime {
-//     type Error = String;
-// }
+impl FileSystem for Runtime {
+    type Error = ();
+}
 
-// impl Pipeline for Runtime {}
