@@ -53,10 +53,10 @@ mod tests {
 
     #[test]
     fn happy() {
-        let dir = "X29304";
+        let tmpdir = "X29304";
         let repo = "git@foo:thingbarnone";
 
-        let r = R(PathBuf::from(dir),[(repo, dir)].iter().cloned().collect());
+        let r = R(PathBuf::from(tmpdir),[(repo, tmpdir)].iter().cloned().collect());
 
         let actual = r.submit_to_pipeline(repo, "", "");
 
