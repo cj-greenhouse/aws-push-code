@@ -1,6 +1,6 @@
 use crate::effect::repo::Git;
 use crate::effect::file::FileSystem;
-use crate::submit::{SubmitE};
+use crate::submit::{SubmitTypes};
 
 pub struct Runtime;
 
@@ -17,5 +17,5 @@ impl FileSystem for Runtime {
     type Error = ();
 }
 
-impl SubmitE for Runtime { type Error = ();}
+impl SubmitTypes for Runtime { type Error = ();}
 

@@ -2,18 +2,20 @@ use crate::effect::repo::*;
 use crate::effect::file::*;
 
 
-pub trait SubmitE {
+
+
+pub trait SubmitTypes {
     type Error;
 }
 
-pub trait Submit: SubmitE {
+pub trait Submit: SubmitTypes {
     fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {unimplemented!();}
 }
 
 impl<T> Submit for T
     where
-        T: Git + FileSystem + SubmitE,
-        <T as SubmitE>::Error: From<<T as Git>::Error> + From<<T as FileSystem>::Error> {
+        T: Git + FileSystem + SubmitTypes,
+        <T as SubmitTypes>::Error: From<<T as Git>::Error> + From<<T as FileSystem>::Error> {
     fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {
     let path = self.mk_temp_dir()?;
     let created = self.clone_repo(repo_url, &path )?;
@@ -47,7 +49,7 @@ mod tests {
         }
     }
 
-    impl SubmitE for R<'_> {type Error = ();}
+    impl SubmitTypes for R<'_> {type Error = ();}
 
     #[test]
     fn happy() {
