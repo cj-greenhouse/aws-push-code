@@ -2,20 +2,24 @@ use crate::effect::repo::*;
 use crate::effect::file::*;
 
 
-pub trait Submit {
+pub trait SubmitE {
     type Error;
+}
+
+pub trait Submit: SubmitE {
     fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {unimplemented!();}
 }
 
-pub fn submit_to_pipeline<RT, E>(runtime: &RT, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), E>
+impl<T> Submit for T
     where
-        RT: Git + FileSystem,
-        E: From<<RT as Git>::Error> + From<<RT as FileSystem>::Error> {
-    let path = runtime.mk_temp_dir()?;
-    let created = runtime.clone_repo(repo_url, &path )?;
+        T: Git + FileSystem + SubmitE,
+        <T as SubmitE>::Error: From<<T as Git>::Error> + From<<T as FileSystem>::Error> {
+    fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {
+    let path = self.mk_temp_dir()?;
+    let created = self.clone_repo(repo_url, &path )?;
     Ok(created)
+    }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -43,6 +47,8 @@ mod tests {
         }
     }
 
+    impl SubmitE for R<'_> {type Error = ();}
+
     #[test]
     fn happy() {
         let dir = "X29304";
@@ -50,7 +56,7 @@ mod tests {
 
         let r = R(PathBuf::from(dir),[(repo, dir)].iter().cloned().collect());
 
-        let actual = submit_to_pipeline::<R, ()>(&r, repo, "", "");
+        let actual = r.submit_to_pipeline(repo, "", "");
 
         assert_eq!(actual, Ok(()));
     }
