@@ -1,0 +1,24 @@
+{
+  "name": "aws-push-code",
+  "version": "1.0.0",
+  "description": "Lambda function to grab code from a remote Git repo and put it on S3.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cj-greenhouse/aws-push-code.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cj-greenhouse/aws-push-code/issues"
+  },
+  "homepage": "https://github.com/cj-greenhouse/aws-push-code#readme",
+  "devDependencies": {
+    "serverless": "^1.44.0",
+    "serverless-rust": "^0.3.4"
+  }
+}
