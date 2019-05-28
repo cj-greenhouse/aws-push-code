@@ -37,7 +37,7 @@ functions:
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
-    handler: aws-push-code
+    handler: aws-push-code.accept
     events:
       - http:
           path: '/push-code'
