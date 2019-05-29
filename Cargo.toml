@@ -8,8 +8,22 @@ edition = "2018"
 futures = "0.1.26"
 futures-fs = "0.0.5"
 git2 = "0.8.0"
-rusoto_core = "0.37.0"
-rusoto_s3 = "0.37.0"
-rusoto_secretsmanager = "0.37.0"
+lambda_runtime = "0.2.1"
+rusoto_core = "0.39.0"
+rusoto_sqs = "0.39.0"
+rusoto_s3 = "0.39.0"
+rusoto_secretsmanager = "0.39.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 walkdir = "2"
 zip = "0.5.2"
+
+
+
+[[bin]]
+name = "accept"
+path = "src/accept.rs"
+
+[[bin]]
+name = "work"
+path = "src/work.rs"

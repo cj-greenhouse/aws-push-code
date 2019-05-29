@@ -1,3 +1,4 @@
+
 use git2::{RemoteCallbacks, FetchOptions, Cred, Error, Oid};
 use git2::build::{RepoBuilder, CheckoutBuilder};
 use rusoto_core::{*};
@@ -15,7 +16,10 @@ use zip::{ZipWriter, CompressionMethod};
 use zip::result::ZipError;
 use zip::write::FileOptions;
 
+
 fn main() {
+
+    exec::exec();
     let dir = "./deleteme-repo";
     // let oid = "8cec085269b276ef6a077381a644b39529b81099";
     // let target = "8cec085269b276ef6a077381a644b39529b81099";

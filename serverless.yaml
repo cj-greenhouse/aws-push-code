@@ -1,0 +1,52 @@
+service: push-code
+provider:
+  name: aws
+  runtime: rust
+  memorySize: 128
+  stage: prod
+  region: us-east-1
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - sqs:*
+      Resource:
+        - !GetAtt WorkQueue.Arn
+
+  environment:
+    PUSHCODE_WORK_QUEUE: !Ref WorkQueue
+
+package:
+  individually: true
+
+plugins:
+  - serverless-rust
+
+functions:
+  accept:
+    # handler value syntax is `{cargo-package-name}.{bin-name}`
+    # or `{cargo-package-name}` for short when you are building a
+    # default bin for a given package.
+    handler: aws-push-code.accept
+    events:
+      - http:
+          path: '/push-code'
+          method: POST
+  work:
+    handler: aws-push-code.work
+    memorySize: 2048
+    events:
+      - sqs:
+          arn: !GetAtt WorkQueue.Arn
+
+resources:
+  Resources:
+    WorkQueue:
+      Type: AWS::SQS::Queue
+    SourceStore:
+      Type: AWS::S3::Bucket
+      Properties:
+          VersioningConfiguration:
+              Status: Enabled
+
+

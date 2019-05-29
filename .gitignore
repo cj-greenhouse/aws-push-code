@@ -8,3 +8,6 @@
 *.gz
 *.bz2
 
+/.serverless
+/node_modules
+
