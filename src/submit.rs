@@ -28,33 +28,53 @@ mod tests {
     use std::collections::{HashSet};
     use std::path::{Path, PathBuf};
 
-    struct R<'a>(PathBuf, HashSet<(&'a str, &'a str)>);
-
-    impl FileSystem for R<'_> {
+    impl FileSystem for PathBuf {
         type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, ()> {
-            Ok(self.0.clone())
+            Ok(self.clone())
         }
     }
 
-    impl Git for R<'_> {
+    impl Git for HashSet<(String, String)> {
         type Error = ();
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
-            if ! self.1.contains(&(from,to.to_str().unwrap())) {
+            if ! self.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
                 panic!("unexpected clone parameters")
             }
             Ok(())
         }
     }
 
-    impl SubmitTypes for R<'_> {type Error = ();}
+    struct R2 {
+        fs: PathBuf,
+        git: HashSet<(String, String)>,
+    }
+
+    impl FileSystem for R2 {
+        type Error = <PathBuf as FileSystem>::Error;
+        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
+            self.fs.mk_temp_dir()
+        }
+    }
+
+    impl Git for R2 {
+        type Error = <HashSet<(String, String)> as Git>::Error;
+        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
+            self.git.clone_repo(from, to)
+        }
+    }
+
+    impl SubmitTypes for R2 {type Error = ();}
 
     #[test]
     fn happy() {
         let tmpdir = "X29304";
         let repo = "git@foo:thingbarnone";
 
-        let r = R(PathBuf::from(tmpdir),[(repo, tmpdir)].iter().cloned().collect());
+        let r = R2 {
+            fs: PathBuf::from(tmpdir),
+            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect()
+        };
 
         let actual = r.submit_to_pipeline(repo, "", "");
 
