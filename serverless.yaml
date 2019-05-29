@@ -34,6 +34,7 @@ functions:
           method: POST
   work:
     handler: aws-push-code.work
+    memorySize: 2048
     events:
       - sqs:
           arn: !GetAtt WorkQueue.Arn
