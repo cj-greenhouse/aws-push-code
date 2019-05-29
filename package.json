@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/cj-greenhouse/aws-push-code#readme",
   "devDependencies": {
-    "serverless": "^1.44.0",
+    "serverless": "^1.44.1",
     "serverless-rust": "^0.3.4"
   }
 }

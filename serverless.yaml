@@ -6,25 +6,15 @@ provider:
   stage: prod
   region: us-east-1
 
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - sqs:*
+      Resource:
+        - !GetAtt WorkQueue.Arn
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+  environment:
+    PUSHCODE_WORK_QUEUE: !Ref WorkQueue
 
 package:
   individually: true
@@ -33,7 +23,7 @@ plugins:
   - serverless-rust
 
 functions:
-  hello:
+  accept:
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
@@ -42,4 +32,14 @@ functions:
       - http:
           path: '/push-code'
           method: POST
+  work:
+    handler: aws-push-code.work
+    events:
+      - sqs:
+          arn: !GetAtt WorkQueue.Arn
+
+resources:
+  Resources:
+    WorkQueue:
+      Type: "AWS::SQS::Queue"
 
