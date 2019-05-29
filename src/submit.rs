@@ -1,5 +1,3 @@
-use std::path::{PathBuf};
-
 use crate::effect::repo::*;
 use crate::effect::file::*;
 use crate::effect::zip::{Zip, ZipTypes};
@@ -22,8 +20,9 @@ impl<T> Submit for T
         {
     fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {
         let path = self.mk_temp_dir()?;
+        let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path )?;
-        self.zip_directory(&path, &PathBuf::from("master.zip"))?;
+        self.zip_directory(&path, &archive)?;
         Ok(())
     }
 }
@@ -39,13 +38,14 @@ mod tests {
     #[test]
     fn happy() {
         let tmpdir = "X29304";
+        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
 
 
         let r = R2 {
-            fs: Some(PathBuf::from(tmpdir)),
+            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
             git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-            zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
+            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
         };
 
         let actual = r.submit_to_pipeline(repo, "", "");
@@ -56,11 +56,12 @@ mod tests {
     #[test]
     fn zip_error() {
         let tmpdir = "X29304";
+        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
 
 
         let r = R2 {
-            fs: Some(PathBuf::from(tmpdir)),
+            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
             git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
             zip: HashSet::new(),
         };
@@ -73,13 +74,14 @@ mod tests {
     #[test]
     fn git_error() {
         let tmpdir = "X29304";
+        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
 
 
         let r = R2 {
-            fs: Some(PathBuf::from(tmpdir)),
+            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
             git: HashSet::new(),
-            zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
+            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
         };
 
         let actual = r.submit_to_pipeline(repo, "", "");
@@ -90,13 +92,14 @@ mod tests {
     #[test]
     fn tmpdir_error() {
         let tmpdir = "X29304";
+        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
 
 
         let r = R2 {
-            fs: None,
+            fs: (None, Some(PathBuf::from(tmpfile))),
             git: HashSet::new(),
-            zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
+            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
         };
 
         let actual = r.submit_to_pipeline(repo, "", "");
@@ -104,12 +107,35 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
+    #[test]
+    fn tmpfile_error() {
+        let tmpdir = "X29304";
+        let tmpfile = "90a90AAC";
+        let repo = "git@foo:thingbarnone";
 
-    type FS = Option<PathBuf>;
+
+        let r = R2 {
+            fs: (Some(PathBuf::from(tmpdir)), None),
+            git: HashSet::new(),
+            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
+        };
+
+        let actual = r.submit_to_pipeline(repo, "", "");
+
+        assert_eq!(actual, Err(()));
+    }
+
+    type FS = (Option<PathBuf>, Option<PathBuf>);
     impl FileSystem for FS {
         type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-            match self {
+            match &self.0 {
+                Some(p) => Ok(p.clone()),
+                None => Err(())
+            }
+        }
+        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+            match &self.1 {
                 Some(p) => Ok(p.clone()),
                 None => Err(())
             }
@@ -151,6 +177,9 @@ mod tests {
         type Error = <FS as FileSystem>::Error;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             self.fs.mk_temp_dir()
+        }
+        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+            self.fs.mk_temp_file()
         }
     }
 
