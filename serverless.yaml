@@ -42,5 +42,11 @@ functions:
 resources:
   Resources:
     WorkQueue:
-      Type: "AWS::SQS::Queue"
+      Type: AWS::SQS::Queue
+    SourceStore:
+      Type: AWS::S3::Bucket
+      Properties:
+          VersioningConfiguration:
+              Status: Enabled
+
 
