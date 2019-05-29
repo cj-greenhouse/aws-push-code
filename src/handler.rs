@@ -2,7 +2,7 @@ use lambda_runtime::{error::HandlerError, Context};
 use rusoto_core::Region;
 use rusoto_sqs::{Sqs, SqsClient, SendMessageRequest};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{map::Map, Value};
 use std::env;
 
 #[derive(Deserialize, Debug)]
@@ -25,7 +25,7 @@ pub struct HookEvent {
     repository: Repository,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PushConfig {
     source_url: String,
     dest_bucket: String,
@@ -67,6 +67,17 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
 
 pub fn work_handler(work: Value, _c: Context) -> Result<(), HandlerError> {
 
-    println!("performing work: {}", work);
+    let work = work.get("Records").unwrap();
+    let work = work.as_array().unwrap();
+    let work: Vec<&Map<String,Value>> = work.into_iter().map(|v| {v.as_object().unwrap()}).collect();
+    let work: Vec<&str> = work.into_iter()
+        .map(|v| {v.get("body").unwrap()})
+        .map(|s| {s.as_str().unwrap()})
+        .collect();
+    let work : Vec<PushConfig> = work.into_iter()
+        .map(|j| serde_json::from_str(j).unwrap())
+        .collect();
+
+    println!("performing work: {:?}", work);
     Ok(())
 }
