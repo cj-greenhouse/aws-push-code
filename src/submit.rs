@@ -43,7 +43,7 @@ mod tests {
 
 
         let r = R2 {
-            fs: PathBuf::from(tmpdir),
+            fs: Some(PathBuf::from(tmpdir)),
             git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
             zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
         };
@@ -60,7 +60,7 @@ mod tests {
 
 
         let r = R2 {
-            fs: PathBuf::from(tmpdir),
+            fs: Some(PathBuf::from(tmpdir)),
             git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
             zip: HashSet::new(),
         };
@@ -77,7 +77,24 @@ mod tests {
 
 
         let r = R2 {
-            fs: PathBuf::from(tmpdir),
+            fs: Some(PathBuf::from(tmpdir)),
+            git: HashSet::new(),
+            zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
+        };
+
+        let actual = r.submit_to_pipeline(repo, "", "");
+
+        assert_eq!(actual, Err(()));
+    }
+
+    #[test]
+    fn tmpdir_error() {
+        let tmpdir = "X29304";
+        let repo = "git@foo:thingbarnone";
+
+
+        let r = R2 {
+            fs: None,
             git: HashSet::new(),
             zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
         };
@@ -88,14 +105,19 @@ mod tests {
     }
 
 
-    impl FileSystem for PathBuf {
+    type FS = Option<PathBuf>;
+    impl FileSystem for FS {
         type Error = ();
-        fn mk_temp_dir(&self) -> Result<PathBuf, ()> {
-            Ok(self.clone())
+        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
+            match self {
+                Some(p) => Ok(p.clone()),
+                None => Err(())
+            }
         }
     }
 
-    impl Git for HashSet<(String, String)> {
+    type GIT = HashSet<(String,String)>;
+    impl Git for GIT {
         type Error = ();
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
             if ! self.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
@@ -106,9 +128,10 @@ mod tests {
         }
     }
 
-    impl ZipTypes for HashSet<(String, String)> {type Error = ();}
+    type ZIP = HashSet<(String, String)>;
+    impl ZipTypes for ZIP {type Error = ();}
 
-    impl Zip for HashSet<(String, String)> {
+    impl Zip for ZIP {
         fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
             if ! self.contains(&(from.to_str().unwrap().to_owned(),to.to_str().unwrap().to_owned())) {
                 Err(())
@@ -119,13 +142,13 @@ mod tests {
     }
 
     struct R2 {
-        fs: PathBuf,
-        git: HashSet<(String, String)>,
-        zip: HashSet<(String, String)>,
+        fs: FS,
+        git: GIT,
+        zip: ZIP,
     }
 
     impl FileSystem for R2 {
-        type Error = <PathBuf as FileSystem>::Error;
+        type Error = <FS as FileSystem>::Error;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             self.fs.mk_temp_dir()
         }
