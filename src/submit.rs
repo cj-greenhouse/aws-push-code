@@ -28,6 +28,23 @@ mod tests {
     use std::collections::{HashSet};
     use std::path::{Path, PathBuf};
 
+
+    #[test]
+    fn happy() {
+        let tmpdir = "X29304";
+        let repo = "git@foo:thingbarnone";
+
+
+        let r = R2 {
+            fs: PathBuf::from(tmpdir),
+            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect()
+        };
+
+        let actual = r.submit_to_pipeline(repo, "", "");
+
+        assert_eq!(actual, Ok(()));
+    }
+
     impl FileSystem for PathBuf {
         type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, ()> {
@@ -66,19 +83,5 @@ mod tests {
 
     impl SubmitTypes for R2 {type Error = ();}
 
-    #[test]
-    fn happy() {
-        let tmpdir = "X29304";
-        let repo = "git@foo:thingbarnone";
-
-        let r = R2 {
-            fs: PathBuf::from(tmpdir),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect()
-        };
-
-        let actual = r.submit_to_pipeline(repo, "", "");
-
-        assert_eq!(actual, Ok(()));
-    }
 }
 
