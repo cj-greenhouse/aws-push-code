@@ -9,7 +9,7 @@ pub trait SubmitTypes {
 }
 
 pub trait Submit: SubmitTypes {
-    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {unimplemented!();}
+    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str) -> Result<(), Self::Error> {unimplemented!();}
 }
 
 impl<T> Submit for T
@@ -21,10 +21,10 @@ impl<T> Submit for T
             From<<T as ZipTypes>::Error>
         {
     fn submit_to_pipeline(&self, repo_url: &str, _s3_bucket: &str, _s3_key: &str)  -> Result<(), Self::Error> {
-    let path = self.mk_temp_dir()?;
-    self.clone_repo(repo_url, &path )?;
-    self.zip_directory(&path, &PathBuf::from("master.zip"))?;
-    Ok(())
+        let path = self.mk_temp_dir()?;
+        self.clone_repo(repo_url, &path )?;
+        self.zip_directory(&path, &PathBuf::from("master.zip"))?;
+        Ok(())
     }
 }
 
@@ -70,6 +70,24 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
+    #[test]
+    fn git_error() {
+        let tmpdir = "X29304";
+        let repo = "git@foo:thingbarnone";
+
+
+        let r = R2 {
+            fs: PathBuf::from(tmpdir),
+            git: HashSet::new(),
+            zip: [(tmpdir.to_owned(), "master.zip".to_owned())].iter().cloned().collect(),
+        };
+
+        let actual = r.submit_to_pipeline(repo, "", "");
+
+        assert_eq!(actual, Err(()));
+    }
+
+
     impl FileSystem for PathBuf {
         type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, ()> {
@@ -81,9 +99,10 @@ mod tests {
         type Error = ();
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
             if ! self.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
-                panic!("unexpected clone parameters")
+                Err(())
+            } else {
+                Ok(())
             }
-            Ok(())
         }
     }
 
