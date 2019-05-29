@@ -2,8 +2,6 @@ use crate::effect::repo::*;
 use crate::effect::file::*;
 
 
-
-
 pub trait SubmitTypes {
     type Error;
 }
