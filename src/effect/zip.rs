@@ -15,13 +15,12 @@ pub trait Zip : ZipTypes {
 }
 
 
-pub fn zip(dir: &Path, arch: &str) -> Result<(), ZipError> {
+pub fn zip(dir: &Path, arch: &Path) -> Result<(), ZipError> {
 
     if !dir.is_dir() {
         return Err(ZipError::FileNotFound);
     }
 
-    let arch = Path::new(arch);
     let arch = File::create(&arch)?;
 
     let walk = WalkDir::new(dir).into_iter();

@@ -41,4 +41,10 @@ A POST method via API Gateway invokes the _accept_ Lambda function.
 Authorizers should be integrated with the Gateway, authentication
 should not be implemented in _accept_ handlers.
 
+### Smoke Testing
+
+Run from the command line with `cargo run --bin main <REPO> <BUCKET> <KEY>`
+to upload the contents of REPO to BUCKET under key, KEY; e.g.
+`cargo run --bin main 'git@github.com:cj-greenhouse/aws-push-code.git' pipelinesources-19203492 master.zip`
+
 

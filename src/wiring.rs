@@ -32,8 +32,8 @@ impl FileSystem for Runtime {
 
 impl ZipTypes for Runtime { type Error = ::zip::result::ZipError; }
 impl Zip for Runtime {
-    fn zip_directory(&self, _from: &Path, _to: &Path) -> Result<(), Self::Error> {
-        unimplemented!();
+    fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
+        zip::zip(from, to)
     }
 }
 
