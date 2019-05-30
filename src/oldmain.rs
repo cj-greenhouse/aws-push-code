@@ -4,7 +4,6 @@ use git2::build::{RepoBuilder, CheckoutBuilder};
 use rusoto_core::{*};
 use rusoto_s3::{*};
 use rusoto_secretsmanager::{GetSecretValueRequest, *};
-use futures::stream::Stream;
 use futures_fs::{FsPool};
 use std::fs::{File};
 use std::io::prelude::*;
@@ -17,9 +16,9 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 
 
-fn main() {
+pub fn main2() {
 
-    exec::exec();
+    // exec::exec();
     let dir = "./deleteme-repo";
     // let oid = "8cec085269b276ef6a077381a644b39529b81099";
     // let target = "8cec085269b276ef6a077381a644b39529b81099";
@@ -68,7 +67,7 @@ pub fn publish(zipfile_name: &str) {
         bucket: "gjw-deleteme-try-put-from-rust".to_owned(),
         key: zipfile_name.to_owned(),
         content_length: Some(meta.len() as i64),
-        body: Some(StreamingBody::new(read_stream.map(|bytes| bytes.to_vec()))),
+        body: Some(StreamingBody::new(read_stream)),
         ..Default::default()
     };
 
@@ -76,12 +75,12 @@ pub fn publish(zipfile_name: &str) {
 
 }
 
-fn secret() -> Option<String> {
+pub fn secret() -> Option<String> {
     std::env::var("GLPK").ok()
 }
 
 
-fn secret_aws() -> Option<String> {
+pub fn secret_aws() -> Option<String> {
 
     let secrets = SecretsManagerClient::new(Region::default());
     let request = GetSecretValueRequest {secret_id: "cj-deploy-key".to_string(), ..Default::default()};
@@ -121,7 +120,7 @@ fn pull(dir: &str, url: &str, target: &str) -> Result<(), Error> {
 
 }
 
-fn greg() -> Result<Cred, Error> {
+pub fn greg() -> Result<Cred, Error> {
     Cred::ssh_key(
         "git",
         None,
