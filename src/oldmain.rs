@@ -184,12 +184,6 @@ fn zip(dir: &str, arch: &str) -> zip::result::ZipResult<()> {
                 } else {
                     None
                 }
-                // println!("{:?}", &name[0..0]);
-                // // if entry.path().to_string().mat != ".git" {
-                //     Some(entry)
-                // // } else {
-                // //     None
-                // // }
             },
             _ => None
         }

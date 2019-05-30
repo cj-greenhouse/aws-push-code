@@ -15,6 +15,7 @@ rusoto_s3 = "0.39.0"
 rusoto_secretsmanager = "0.39.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tempfile = "3.0.8"
 walkdir = "2"
 zip = "0.5.2"
 
@@ -27,3 +28,7 @@ path = "src/accept.rs"
 [[bin]]
 name = "work"
 path = "src/work.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
