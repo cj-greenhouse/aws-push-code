@@ -30,17 +30,10 @@ impl FileSystem for Runtime {
     }
 }
 
-impl ZipTypes for Runtime { type Error = ::zip::result::ZipError; }
-impl Zip for Runtime {
-    fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
-        zip::zip(from, to)
-    }
-}
+impl ZipTypes for Runtime { type Error = RuntimeError; }
+impl zip::InIO for Runtime {}
 
-impl S3Types for Runtime {
-    type Error = RuntimeError;
-}
-
+impl S3Types for Runtime  {type Error = RuntimeError; }
 impl s3::InIO for Runtime {}
 
 #[derive(Debug)]
