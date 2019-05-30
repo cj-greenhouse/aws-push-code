@@ -34,25 +34,16 @@ impl<T> Submit for T
 mod tests {
 
     use super::*;
-    use std::collections::{HashSet};
     use std::path::{Path, PathBuf};
 
 
     #[test]
     fn happy() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
-        let r = R2 {
-            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
-            s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
-        };
+        let r = R2::test_case(repo, bucket, key);
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
 
@@ -61,18 +52,13 @@ mod tests {
 
     #[test]
     fn zip_error() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
         let r = R2 {
-            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
             zip: ZIP::default(),
-            s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
+            ..R2::test_case(repo, bucket, key)
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -82,18 +68,13 @@ mod tests {
 
     #[test]
     fn git_error() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
         let r = R2 {
-            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
             git: GIT::default(),
-            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
-            s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
+            ..R2::test_case(repo, bucket, key)
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -103,18 +84,13 @@ mod tests {
 
     #[test]
     fn tmpdir_error() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
         let r = R2 {
-            fs: (None, Some(PathBuf::from(tmpfile))),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
-            s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
+            tmpdir: None,
+            ..R2::test_case(repo, bucket, key)
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -124,18 +100,14 @@ mod tests {
 
     #[test]
     fn tmpfile_error() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
+
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
         let r = R2 {
-            fs: (Some(PathBuf::from(tmpdir)), None),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
-            s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
+            tmpfile: None,
+            ..R2::test_case(repo, bucket, key)
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -145,18 +117,13 @@ mod tests {
 
     #[test]
     fn put_error() {
-        let tmpdir = "X29304";
-        let tmpfile = "90a90AAC";
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-
         let r = R2 {
-            fs: (Some(PathBuf::from(tmpdir)), Some(PathBuf::from(tmpfile))),
-            git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-            zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
             s3: SSS::default(),
+            ..R2::test_case(repo, bucket, key)
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -165,79 +132,92 @@ mod tests {
     }
 
 
-    type FS = (Option<PathBuf>, Option<PathBuf>);
+    type FS = (Option<String>, Option<String>);
     impl FileSystem for FS {
         type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             match &self.0 {
-                Some(p) => Ok(p.clone()),
+                Some(p) => Ok(PathBuf::from(p)),
                 None => Err(())
             }
         }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
             match &self.1 {
-                Some(p) => Ok(p.clone()),
+                Some(p) => Ok(PathBuf::from(p)),
                 None => Err(())
             }
         }
     }
 
-    type GIT = HashSet<(String,String)>;
+    type GIT = Option<(String,String)>;
     impl Git for GIT {
         type Error = ();
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
-            if ! self.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
-                Err(())
-            } else {
-                Ok(())
+            match self {
+                Some((f, t)) => if f == from && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
 
-    type ZIP = HashSet<(String, String)>;
+    type ZIP = Option<(String, String)>;
     impl ZipTypes for ZIP {type Error = ();}
 
     impl Zip for ZIP {
         fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
-            if ! self.contains(&(from.to_str().unwrap().to_owned(),to.to_str().unwrap().to_owned())) {
-                Err(())
-            } else {
-                Ok(())
+            match self {
+                Some((f, t)) => if f == from.to_str().unwrap() && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
 
-    type SSS = HashSet<(String, String, String)>;
+    type SSS = Option<(String, String, String)>;
     impl S3Types for SSS {type Error = ();}
     impl S3 for SSS {
-        fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
-            if self.contains(&(file.to_str().unwrap().to_owned(), bucket.to_owned(), key.to_owned())) {
-                Ok (())
-            } else {
-                Err(())
+        fn put_object(&self, from: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
+            match self {
+                Some((f, b, k)) => if f == from.to_str().unwrap() && b == bucket &&  k == key { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
 
     struct R2 {
-        fs: FS,
+        tmpdir: Option<String>,
+        tmpfile: Option<String>,
         git: GIT,
         zip: ZIP,
         s3: SSS,
     }
 
+    impl R2 {
+        fn test_case(repo: &str, bucket: &str, key: &str) -> R2 {
+            let tmpdir = "X29304";
+            let tmpfile = "90a90AAC";
+
+            R2 {
+                tmpdir: Some(tmpdir.to_owned()),
+                tmpfile: Some(tmpfile.to_owned()),
+                git: Some((repo.to_owned(), tmpdir.to_owned())),
+                zip: Some((tmpdir.to_owned(), tmpfile.to_owned())),
+                s3: Some((tmpfile.to_owned(), bucket.to_owned(), key.to_owned())),
+            }
+        }
+    }
+
     impl FileSystem for R2 {
         type Error = <FS as FileSystem>::Error;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-            self.fs.mk_temp_dir()
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
-            self.fs.mk_temp_file()
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file()
         }
     }
 
     impl Git for R2 {
-        type Error = <HashSet<(String, String)> as Git>::Error;
+        type Error = <GIT as Git>::Error;
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
             self.git.clone_repo(from, to)
         }
