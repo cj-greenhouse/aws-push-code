@@ -34,7 +34,6 @@ impl<T> Submit for T
 mod tests {
 
     use super::*;
-    use std::collections::{HashSet};
     use std::path::{Path, PathBuf};
 
 
@@ -150,39 +149,36 @@ mod tests {
         }
     }
 
-    type GIT = HashSet<(String,String)>;
+    type GIT = Option<(String,String)>;
     impl Git for GIT {
         type Error = ();
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
-            if ! self.contains(&(from.to_owned(),to.to_str().unwrap().to_owned())) {
-                Err(())
-            } else {
-                Ok(())
+            match self {
+                Some((f, t)) => if f == from && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
 
-    type ZIP = HashSet<(String, String)>;
+    type ZIP = Option<(String, String)>;
     impl ZipTypes for ZIP {type Error = ();}
 
     impl Zip for ZIP {
         fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
-            if ! self.contains(&(from.to_str().unwrap().to_owned(),to.to_str().unwrap().to_owned())) {
-                Err(())
-            } else {
-                Ok(())
+            match self {
+                Some((f, t)) => if f == from.to_str().unwrap() && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
 
-    type SSS = HashSet<(String, String, String)>;
+    type SSS = Option<(String, String, String)>;
     impl S3Types for SSS {type Error = ();}
     impl S3 for SSS {
-        fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
-            if self.contains(&(file.to_str().unwrap().to_owned(), bucket.to_owned(), key.to_owned())) {
-                Ok (())
-            } else {
-                Err(())
+        fn put_object(&self, from: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
+            match self {
+                Some((f, b, k)) => if f == from.to_str().unwrap() && b == bucket &&  k == key { Ok(()) } else {Err(())}
+                _ => Err(())
             }
         }
     }
@@ -203,9 +199,9 @@ mod tests {
             R2 {
                 tmpdir: Some(tmpdir.to_owned()),
                 tmpfile: Some(tmpfile.to_owned()),
-                git: [(repo.to_owned(), tmpdir.to_owned())].iter().cloned().collect(),
-                zip: [(tmpdir.to_owned(), tmpfile.to_owned())].iter().cloned().collect(),
-                s3: [(tmpfile.to_owned(), bucket.to_owned(), key.to_owned())].iter().cloned().collect(),
+                git: Some((repo.to_owned(), tmpdir.to_owned())),
+                zip: Some((tmpdir.to_owned(), tmpfile.to_owned())),
+                s3: Some((tmpfile.to_owned(), bucket.to_owned(), key.to_owned())),
             }
         }
     }
@@ -221,7 +217,7 @@ mod tests {
     }
 
     impl Git for R2 {
-        type Error = <HashSet<(String, String)> as Git>::Error;
+        type Error = <GIT as Git>::Error;
         fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
             self.git.clone_repo(from, to)
         }
