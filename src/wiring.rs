@@ -1,26 +1,35 @@
-use crate::effect::repo::{self, GitTypes};
 use crate::effect::file::{self, FileSystemTypes};
-use crate::effect::zip::{self, ZipTypes};
+use crate::effect::repo::{self, GitTypes};
 use crate::effect::s3::{self, S3Types};
-use crate::submit::{SubmitTypes};
-
+use crate::effect::zip::{self, ZipTypes};
+use crate::submit::SubmitTypes;
 
 pub struct Runtime;
 
 impl Runtime {
-    pub fn new() -> Runtime {Runtime}
+    pub fn new() -> Runtime {
+        Runtime
+    }
 }
 
-impl GitTypes for Runtime { type Error = RuntimeError; }
+impl GitTypes for Runtime {
+    type Error = RuntimeError;
+}
 impl repo::InIO for Runtime {}
 
-impl FileSystemTypes for Runtime { type Error = RuntimeError; }
+impl FileSystemTypes for Runtime {
+    type Error = RuntimeError;
+}
 impl file::InIO for Runtime {}
 
-impl ZipTypes for Runtime { type Error = RuntimeError; }
+impl ZipTypes for Runtime {
+    type Error = RuntimeError;
+}
 impl zip::InIO for Runtime {}
 
-impl S3Types for Runtime  {type Error = RuntimeError; }
+impl S3Types for Runtime {
+    type Error = RuntimeError;
+}
 impl s3::InIO for Runtime {}
 
 #[derive(Debug)]
@@ -50,5 +59,6 @@ impl From<rusoto_core::RusotoError<rusoto_s3::PutObjectError>> for RuntimeError 
     }
 }
 
-impl SubmitTypes for Runtime { type Error = RuntimeError;}
-
+impl SubmitTypes for Runtime {
+    type Error = RuntimeError;
+}

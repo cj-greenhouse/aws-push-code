@@ -1,28 +1,29 @@
-use std::io::{Write, Seek, Read};
-use std::path::Path;
 use std::fs::File;
-use walkdir::{WalkDir, DirEntry};
-use zip::{ZipWriter, CompressionMethod};
+use std::io::{Read, Seek, Write};
+use std::path::Path;
+use walkdir::{DirEntry, WalkDir};
 use zip::result::ZipError;
 use zip::write::FileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 pub trait ZipTypes {
     type Error;
 }
 
-pub trait Zip : ZipTypes {
-    fn zip_directory(&self, _from: &Path, _to: &Path) -> Result<(), Self::Error> {unimplemented!();}
+pub trait Zip: ZipTypes {
+    fn zip_directory(&self, _from: &Path, _to: &Path) -> Result<(), Self::Error> {
+        unimplemented!();
+    }
 }
-
 
 pub trait InIO {}
 
-impl<T> Zip for T where
+impl<T> Zip for T
+where
     T: ZipTypes + InIO,
     <T as ZipTypes>::Error: From<ZipError>,
-    <T as ZipTypes>::Error: From<std::io::Error>
-    {
-
+    <T as ZipTypes>::Error: From<std::io::Error>,
+{
     fn zip_directory(&self, dir: &Path, arch: &Path) -> Result<(), Self::Error> {
         if !dir.is_dir() {
             return Err(Self::Error::from(ZipError::FileNotFound));
@@ -31,8 +32,10 @@ impl<T> Zip for T where
         let arch = File::create(&arch)?;
 
         let walk = WalkDir::new(dir).into_iter();
-        zipd(arch, dir, &mut walk.filter_map(|e| {
-            match e {
+        zipd(
+            arch,
+            dir,
+            &mut walk.filter_map(|e| match e {
                 Ok(entry) => {
                     let path = entry.path();
                     let name = path.strip_prefix(Path::new(dir)).unwrap();
@@ -42,17 +45,15 @@ impl<T> Zip for T where
                     } else {
                         None
                     }
-                },
-                _ => None
-            }
-        }))?;
+                }
+                _ => None,
+            }),
+        )?;
         Ok(())
     }
 }
 
-
 pub fn zip(dir: &Path, arch: &Path) -> Result<(), ZipError> {
-
     if !dir.is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -60,8 +61,10 @@ pub fn zip(dir: &Path, arch: &Path) -> Result<(), ZipError> {
     let arch = File::create(&arch)?;
 
     let walk = WalkDir::new(dir).into_iter();
-    zipd(arch, dir, &mut walk.filter_map(|e| {
-        match e {
+    zipd(
+        arch,
+        dir,
+        &mut walk.filter_map(|e| match e {
             Ok(entry) => {
                 let path = entry.path();
                 let name = path.strip_prefix(Path::new(dir)).unwrap();
@@ -71,20 +74,18 @@ pub fn zip(dir: &Path, arch: &Path) -> Result<(), ZipError> {
                 } else {
                     None
                 }
-            },
-            _ => None
-        }
-    }))
-
+            }
+            _ => None,
+        }),
+    )
 }
 
-
-fn zipd<T>(writer: T, prefix: &Path, it: &mut Iterator<Item=DirEntry>) -> Result<(), ZipError>
-    where T: Write+Seek {
-
+fn zipd<T>(writer: T, prefix: &Path, it: &mut Iterator<Item = DirEntry>) -> Result<(), ZipError>
+where
+    T: Write + Seek,
+{
     let mut zip = ZipWriter::new(writer);
-    let options = FileOptions::default()
-        .compression_method(CompressionMethod::Deflated);
+    let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
 
     let mut buffer = Vec::new();
     for entry in it {

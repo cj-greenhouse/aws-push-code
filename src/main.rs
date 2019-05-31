@@ -1,8 +1,7 @@
-use aws_push_code::wiring::{Runtime, RuntimeError};
 use aws_push_code::submit::Submit;
+use aws_push_code::wiring::{Runtime, RuntimeError};
 
 fn main() -> Result<(), RuntimeError> {
-
     let params: Vec<String> = std::env::args().collect();
 
     let runtime = Runtime::new();

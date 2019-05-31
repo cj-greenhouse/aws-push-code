@@ -1,6 +1,6 @@
 use crate::effect::file::{FileSystem, FileSystemTypes};
 use crate::effect::repo::{Git, GitTypes};
-use crate::effect::s3::{S3, S3Types};
+use crate::effect::s3::{S3Types, S3};
 use crate::effect::zip::{Zip, ZipTypes};
 
 pub trait SubmitTypes {
@@ -8,22 +8,33 @@ pub trait SubmitTypes {
 }
 
 pub trait Submit: SubmitTypes {
-    fn submit_to_pipeline(&self, _repo_url: &str, _s3_bucket: &str, _s3_key: &str) -> Result<(), Self::Error> {unimplemented!();}
+    fn submit_to_pipeline(
+        &self,
+        _repo_url: &str,
+        _s3_bucket: &str,
+        _s3_key: &str,
+    ) -> Result<(), Self::Error> {
+        unimplemented!();
+    }
 }
 
 impl<T> Submit for T
-    where
-        T: Git + FileSystem + SubmitTypes + Zip + S3,
-        <T as SubmitTypes>::Error:
-            From<<T as FileSystemTypes>::Error> +
-            From<<T as GitTypes>::Error> +
-            From<<T as S3Types>::Error> +
-            From<<T as ZipTypes>::Error>
-        {
-    fn submit_to_pipeline(&self, repo_url: &str, s3_bucket: &str, s3_key: &str)  -> Result<(), Self::Error> {
+where
+    T: Git + FileSystem + SubmitTypes + Zip + S3,
+    <T as SubmitTypes>::Error: From<<T as FileSystemTypes>::Error>
+        + From<<T as GitTypes>::Error>
+        + From<<T as S3Types>::Error>
+        + From<<T as ZipTypes>::Error>,
+{
+    fn submit_to_pipeline(
+        &self,
+        repo_url: &str,
+        s3_bucket: &str,
+        s3_key: &str,
+    ) -> Result<(), Self::Error> {
         let path = self.mk_temp_dir()?;
         let archive = self.mk_temp_file()?;
-        self.clone_repo(repo_url, &path, "master" )?;
+        self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory(&path, &archive)?;
         self.put_object(&archive, s3_bucket, s3_key)?;
         Ok(())
@@ -35,7 +46,6 @@ mod tests {
 
     use super::*;
     use std::path::{Path, PathBuf};
-
 
     #[test]
     fn happy() {
@@ -100,7 +110,6 @@ mod tests {
 
     #[test]
     fn tmpfile_error() {
-
         let repo = "git@foo:thingbarnone";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
@@ -131,54 +140,79 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
-
     type FS = (Option<String>, Option<String>);
-    impl FileSystemTypes for FS { type Error = (); }
+    impl FileSystemTypes for FS {
+        type Error = ();
+    }
     impl FileSystem for FS {
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             match &self.0 {
                 Some(p) => Ok(PathBuf::from(p)),
-                None => Err(())
+                None => Err(()),
             }
         }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
             match &self.1 {
                 Some(p) => Ok(PathBuf::from(p)),
-                None => Err(())
+                None => Err(()),
             }
         }
     }
 
     type GIT = Option<(String, String, String)>;
-    impl GitTypes for GIT { type Error = (); }
+    impl GitTypes for GIT {
+        type Error = ();
+    }
     impl Git for GIT {
         fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
             match self {
-                Some((f, t, targ)) => if f == from && t == to.to_str().unwrap() && targ == target { Ok(()) } else {Err(())}
-                _ => Err(())
+                Some((f, t, targ)) => {
+                    if f == from && t == to.to_str().unwrap() && targ == target {
+                        Ok(())
+                    } else {
+                        Err(())
+                    }
+                }
+                _ => Err(()),
             }
         }
     }
 
     type ZIP = Option<(String, String)>;
-    impl ZipTypes for ZIP {type Error = ();}
+    impl ZipTypes for ZIP {
+        type Error = ();
+    }
 
     impl Zip for ZIP {
         fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
             match self {
-                Some((f, t)) => if f == from.to_str().unwrap() && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
-                _ => Err(())
+                Some((f, t)) => {
+                    if f == from.to_str().unwrap() && t == to.to_str().unwrap() {
+                        Ok(())
+                    } else {
+                        Err(())
+                    }
+                }
+                _ => Err(()),
             }
         }
     }
 
     type SSS = Option<(String, String, String)>;
-    impl S3Types for SSS {type Error = ();}
+    impl S3Types for SSS {
+        type Error = ();
+    }
     impl S3 for SSS {
         fn put_object(&self, from: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
             match self {
-                Some((f, b, k)) => if f == from.to_str().unwrap() && b == bucket &&  k == key { Ok(()) } else {Err(())}
-                _ => Err(())
+                Some((f, b, k)) => {
+                    if f == from.to_str().unwrap() && b == bucket && k == key {
+                        Ok(())
+                    } else {
+                        Err(())
+                    }
+                }
+                _ => Err(()),
             }
         }
     }
@@ -206,7 +240,9 @@ mod tests {
         }
     }
 
-    impl FileSystemTypes for R2 { type Error = <FS as FileSystemTypes>::Error; }
+    impl FileSystemTypes for R2 {
+        type Error = <FS as FileSystemTypes>::Error;
+    }
     impl FileSystem for R2 {
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
@@ -216,7 +252,9 @@ mod tests {
         }
     }
 
-    impl GitTypes for R2 { type Error = <GIT as GitTypes>::Error; }
+    impl GitTypes for R2 {
+        type Error = <GIT as GitTypes>::Error;
+    }
     impl Git for R2 {
         fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
             self.git.clone_repo(from, to, target)
@@ -243,7 +281,8 @@ mod tests {
         }
     }
 
-    impl SubmitTypes for R2 {type Error = ();}
+    impl SubmitTypes for R2 {
+        type Error = ();
+    }
 
 }
-
