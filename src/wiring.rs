@@ -1,10 +1,10 @@
-use crate::effect::repo::{self, Git, GitTypes};
+use crate::effect::repo::{self, GitTypes};
 use crate::effect::file::{self, FileSystem};
-use crate::effect::zip::{self, Zip, ZipTypes};
-use crate::effect::s3::{self, S3, S3Types};
+use crate::effect::zip::{self, ZipTypes};
+use crate::effect::s3::{self, S3Types};
 use crate::submit::{SubmitTypes};
 
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 
 pub struct Runtime;
 
@@ -13,6 +13,7 @@ impl Runtime {
 }
 
 impl GitTypes for Runtime { type Error = RuntimeError; }
+impl repo::InIO for Runtime {}
 
 impl FileSystem for Runtime {
     type Error = std::io::Error;

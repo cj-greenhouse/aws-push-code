@@ -43,7 +43,7 @@ mod tests {
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-        let r = R2::test_case(repo, bucket, key);
+        let r = R2::test_case(repo, bucket, key, "master");
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
 
@@ -58,7 +58,7 @@ mod tests {
 
         let r = R2 {
             zip: ZIP::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -74,7 +74,7 @@ mod tests {
 
         let r = R2 {
             git: GIT::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -90,7 +90,7 @@ mod tests {
 
         let r = R2 {
             tmpdir: None,
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -107,7 +107,7 @@ mod tests {
 
         let r = R2 {
             tmpfile: None,
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -123,7 +123,7 @@ mod tests {
 
         let r = R2 {
             s3: SSS::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -149,12 +149,12 @@ mod tests {
         }
     }
 
-    type GIT = Option<(String,String)>;
+    type GIT = Option<(String, String, String)>;
+    impl GitTypes for GIT { type Error = (); }
     impl Git for GIT {
-        type Error = ();
-        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
+        fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
             match self {
-                Some((f, t)) => if f == from && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                Some((f, t, targ)) => if f == from && t == to.to_str().unwrap() && targ == target { Ok(()) } else {Err(())}
                 _ => Err(())
             }
         }
@@ -192,14 +192,14 @@ mod tests {
     }
 
     impl R2 {
-        fn test_case(repo: &str, bucket: &str, key: &str) -> R2 {
+        fn test_case(repo: &str, bucket: &str, key: &str, target: &str) -> R2 {
             let tmpdir = "X29304";
             let tmpfile = "90a90AAC";
 
             R2 {
                 tmpdir: Some(tmpdir.to_owned()),
                 tmpfile: Some(tmpfile.to_owned()),
-                git: Some((repo.to_owned(), tmpdir.to_owned())),
+                git: Some((repo.to_owned(), tmpdir.to_owned(), target.to_owned())),
                 zip: Some((tmpdir.to_owned(), tmpfile.to_owned())),
                 s3: Some((tmpfile.to_owned(), bucket.to_owned(), key.to_owned())),
             }
@@ -216,10 +216,10 @@ mod tests {
         }
     }
 
+    impl GitTypes for R2 { type Error = <GIT as GitTypes>::Error; }
     impl Git for R2 {
-        type Error = <GIT as Git>::Error;
-        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
-            self.git.clone_repo(from, to)
+        fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
+            self.git.clone_repo(from, to, target)
         }
     }
 
