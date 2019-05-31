@@ -6,8 +6,8 @@ use crate::submit::SubmitTypes;
 
 pub struct Runtime;
 
-impl Runtime {
-    pub fn new() -> Runtime {
+impl Default for Runtime {
+    fn default() -> Self {
         Runtime
     }
 }

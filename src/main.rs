@@ -4,7 +4,7 @@ use aws_push_code::wiring::{Runtime, RuntimeError};
 fn main() -> Result<(), RuntimeError> {
     let params: Vec<String> = std::env::args().collect();
 
-    let runtime = Runtime::new();
+    let runtime = Runtime::default();
 
     let repo = params.get(1).unwrap();
     let bucket = params.get(2).unwrap();

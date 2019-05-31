@@ -66,14 +66,14 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
 pub fn work_handler(work: Value, _c: Context) -> Result<(), HandlerError> {
     let work = work.get("Records").unwrap();
     let work = work.as_array().unwrap();
-    let work: Vec<&Map<String, Value>> = work.into_iter().map(|v| v.as_object().unwrap()).collect();
+    let work: Vec<&Map<String, Value>> = work.iter().map(|v| v.as_object().unwrap()).collect();
     let work: Vec<&str> = work
-        .into_iter()
+        .iter()
         .map(|v| v.get("body").unwrap())
         .map(|s| s.as_str().unwrap())
         .collect();
     let work: Vec<PushConfig> = work
-        .into_iter()
+        .iter()
         .map(|j| serde_json::from_str(j).unwrap())
         .collect();
 

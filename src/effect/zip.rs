@@ -97,7 +97,7 @@ where
             f.read_to_end(&mut buffer)?;
             zip.write_all(&*buffer)?;
             buffer.clear();
-        } else if name.as_os_str().len() != 0 {
+        } else if !name.as_os_str().is_empty() {
             zip.add_directory_from_path(name, options)?;
         }
     }
