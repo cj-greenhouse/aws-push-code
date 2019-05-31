@@ -1,4 +1,4 @@
-use crate::effect::file::{FileSystem};
+use crate::effect::file::{FileSystem, FileSystemTypes};
 use crate::effect::repo::{Git, GitTypes};
 use crate::effect::s3::{S3, S3Types};
 use crate::effect::zip::{Zip, ZipTypes};
@@ -15,7 +15,7 @@ impl<T> Submit for T
     where
         T: Git + FileSystem + SubmitTypes + Zip + S3,
         <T as SubmitTypes>::Error:
-            From<<T as FileSystem>::Error> +
+            From<<T as FileSystemTypes>::Error> +
             From<<T as GitTypes>::Error> +
             From<<T as S3Types>::Error> +
             From<<T as ZipTypes>::Error>
@@ -133,8 +133,8 @@ mod tests {
 
 
     type FS = (Option<String>, Option<String>);
+    impl FileSystemTypes for FS { type Error = (); }
     impl FileSystem for FS {
-        type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             match &self.0 {
                 Some(p) => Ok(PathBuf::from(p)),
@@ -206,8 +206,8 @@ mod tests {
         }
     }
 
+    impl FileSystemTypes for R2 { type Error = <FS as FileSystemTypes>::Error; }
     impl FileSystem for R2 {
-        type Error = <FS as FileSystem>::Error;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }

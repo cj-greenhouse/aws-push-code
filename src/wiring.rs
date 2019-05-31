@@ -1,10 +1,9 @@
 use crate::effect::repo::{self, GitTypes};
-use crate::effect::file::{self, FileSystem};
+use crate::effect::file::{self, FileSystemTypes};
 use crate::effect::zip::{self, ZipTypes};
 use crate::effect::s3::{self, S3Types};
 use crate::submit::{SubmitTypes};
 
-use std::path::PathBuf;
 
 pub struct Runtime;
 
@@ -15,15 +14,8 @@ impl Runtime {
 impl GitTypes for Runtime { type Error = RuntimeError; }
 impl repo::InIO for Runtime {}
 
-impl FileSystem for Runtime {
-    type Error = std::io::Error;
-    fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-        file::mk_temp_dir()
-    }
-    fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
-        file::mk_temp_file()
-    }
-}
+impl FileSystemTypes for Runtime { type Error = RuntimeError; }
+impl file::InIO for Runtime {}
 
 impl ZipTypes for Runtime { type Error = RuntimeError; }
 impl zip::InIO for Runtime {}
