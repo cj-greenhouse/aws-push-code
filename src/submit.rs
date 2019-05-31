@@ -1,5 +1,5 @@
 use crate::effect::file::{FileSystem};
-use crate::effect::repo::{Git};
+use crate::effect::repo::{Git, GitTypes};
 use crate::effect::s3::{S3, S3Types};
 use crate::effect::zip::{Zip, ZipTypes};
 
@@ -16,14 +16,14 @@ impl<T> Submit for T
         T: Git + FileSystem + SubmitTypes + Zip + S3,
         <T as SubmitTypes>::Error:
             From<<T as FileSystem>::Error> +
-            From<<T as Git>::Error> +
+            From<<T as GitTypes>::Error> +
             From<<T as S3Types>::Error> +
             From<<T as ZipTypes>::Error>
         {
     fn submit_to_pipeline(&self, repo_url: &str, s3_bucket: &str, s3_key: &str)  -> Result<(), Self::Error> {
         let path = self.mk_temp_dir()?;
         let archive = self.mk_temp_file()?;
-        self.clone_repo(repo_url, &path )?;
+        self.clone_repo(repo_url, &path, "master" )?;
         self.zip_directory(&path, &archive)?;
         self.put_object(&archive, s3_bucket, s3_key)?;
         Ok(())

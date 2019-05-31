@@ -1,4 +1,4 @@
-use crate::effect::repo::{self, Git};
+use crate::effect::repo::{self, Git, GitTypes};
 use crate::effect::file::{self, FileSystem};
 use crate::effect::zip::{self, Zip, ZipTypes};
 use crate::effect::s3::{self, S3, S3Types};
@@ -12,13 +12,7 @@ impl Runtime {
     pub fn new() -> Runtime {Runtime}
 }
 
-
-impl Git for Runtime {
-    type Error = git2::Error;
-    fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
-        repo::pull_git_repo(to.to_str().unwrap(), from, "master")
-    }
-}
+impl GitTypes for Runtime { type Error = RuntimeError; }
 
 impl FileSystem for Runtime {
     type Error = std::io::Error;
