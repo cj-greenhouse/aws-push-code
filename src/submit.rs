@@ -1,5 +1,5 @@
-use crate::effect::file::{FileSystem};
-use crate::effect::repo::{Git};
+use crate::effect::file::{FileSystem, FileSystemTypes};
+use crate::effect::repo::{Git, GitTypes};
 use crate::effect::s3::{S3, S3Types};
 use crate::effect::zip::{Zip, ZipTypes};
 
@@ -15,15 +15,15 @@ impl<T> Submit for T
     where
         T: Git + FileSystem + SubmitTypes + Zip + S3,
         <T as SubmitTypes>::Error:
-            From<<T as FileSystem>::Error> +
-            From<<T as Git>::Error> +
+            From<<T as FileSystemTypes>::Error> +
+            From<<T as GitTypes>::Error> +
             From<<T as S3Types>::Error> +
             From<<T as ZipTypes>::Error>
         {
     fn submit_to_pipeline(&self, repo_url: &str, s3_bucket: &str, s3_key: &str)  -> Result<(), Self::Error> {
         let path = self.mk_temp_dir()?;
         let archive = self.mk_temp_file()?;
-        self.clone_repo(repo_url, &path )?;
+        self.clone_repo(repo_url, &path, "master" )?;
         self.zip_directory(&path, &archive)?;
         self.put_object(&archive, s3_bucket, s3_key)?;
         Ok(())
@@ -43,7 +43,7 @@ mod tests {
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-        let r = R2::test_case(repo, bucket, key);
+        let r = R2::test_case(repo, bucket, key, "master");
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
 
@@ -58,7 +58,7 @@ mod tests {
 
         let r = R2 {
             zip: ZIP::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -74,7 +74,7 @@ mod tests {
 
         let r = R2 {
             git: GIT::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -90,7 +90,7 @@ mod tests {
 
         let r = R2 {
             tmpdir: None,
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -107,7 +107,7 @@ mod tests {
 
         let r = R2 {
             tmpfile: None,
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -123,7 +123,7 @@ mod tests {
 
         let r = R2 {
             s3: SSS::default(),
-            ..R2::test_case(repo, bucket, key)
+            ..R2::test_case(repo, bucket, key, "master")
         };
 
         let actual = r.submit_to_pipeline(repo, bucket, key);
@@ -133,8 +133,8 @@ mod tests {
 
 
     type FS = (Option<String>, Option<String>);
+    impl FileSystemTypes for FS { type Error = (); }
     impl FileSystem for FS {
-        type Error = ();
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             match &self.0 {
                 Some(p) => Ok(PathBuf::from(p)),
@@ -149,12 +149,12 @@ mod tests {
         }
     }
 
-    type GIT = Option<(String,String)>;
+    type GIT = Option<(String, String, String)>;
+    impl GitTypes for GIT { type Error = (); }
     impl Git for GIT {
-        type Error = ();
-        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), ()> {
+        fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
             match self {
-                Some((f, t)) => if f == from && t == to.to_str().unwrap() { Ok(()) } else {Err(())}
+                Some((f, t, targ)) => if f == from && t == to.to_str().unwrap() && targ == target { Ok(()) } else {Err(())}
                 _ => Err(())
             }
         }
@@ -192,22 +192,22 @@ mod tests {
     }
 
     impl R2 {
-        fn test_case(repo: &str, bucket: &str, key: &str) -> R2 {
+        fn test_case(repo: &str, bucket: &str, key: &str, target: &str) -> R2 {
             let tmpdir = "X29304";
             let tmpfile = "90a90AAC";
 
             R2 {
                 tmpdir: Some(tmpdir.to_owned()),
                 tmpfile: Some(tmpfile.to_owned()),
-                git: Some((repo.to_owned(), tmpdir.to_owned())),
+                git: Some((repo.to_owned(), tmpdir.to_owned(), target.to_owned())),
                 zip: Some((tmpdir.to_owned(), tmpfile.to_owned())),
                 s3: Some((tmpfile.to_owned(), bucket.to_owned(), key.to_owned())),
             }
         }
     }
 
+    impl FileSystemTypes for R2 { type Error = <FS as FileSystemTypes>::Error; }
     impl FileSystem for R2 {
-        type Error = <FS as FileSystem>::Error;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
@@ -216,10 +216,10 @@ mod tests {
         }
     }
 
+    impl GitTypes for R2 { type Error = <GIT as GitTypes>::Error; }
     impl Git for R2 {
-        type Error = <GIT as Git>::Error;
-        fn clone_repo(&self, from: &str, to: &Path) -> Result<(), Self::Error> {
-            self.git.clone_repo(from, to)
+        fn clone_repo(&self, from: &str, to: &Path, target: &str) -> Result<(), Self::Error> {
+            self.git.clone_repo(from, to, target)
         }
     }
 

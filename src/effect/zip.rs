@@ -15,6 +15,42 @@ pub trait Zip : ZipTypes {
 }
 
 
+pub trait InIO {}
+
+impl<T> Zip for T where
+    T: ZipTypes + InIO,
+    <T as ZipTypes>::Error: From<ZipError>,
+    <T as ZipTypes>::Error: From<std::io::Error>
+    {
+
+    fn zip_directory(&self, dir: &Path, arch: &Path) -> Result<(), Self::Error> {
+        if !dir.is_dir() {
+            return Err(Self::Error::from(ZipError::FileNotFound));
+        }
+
+        let arch = File::create(&arch)?;
+
+        let walk = WalkDir::new(dir).into_iter();
+        zipd(arch, dir, &mut walk.filter_map(|e| {
+            match e {
+                Ok(entry) => {
+                    let path = entry.path();
+                    let name = path.strip_prefix(Path::new(dir)).unwrap();
+                    let name = name.to_str()?;
+                    if name != ".git" && (name.len() < 5 || &name[0..5] != ".git/") {
+                        Some(entry)
+                    } else {
+                        None
+                    }
+                },
+                _ => None
+            }
+        }))?;
+        Ok(())
+    }
+}
+
+
 pub fn zip(dir: &Path, arch: &Path) -> Result<(), ZipError> {
 
     if !dir.is_dir() {
