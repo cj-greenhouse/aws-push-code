@@ -36,7 +36,7 @@ where
         s3_bucket: &str,
         s3_key: &str,
     ) -> Result<(), Self::Error> {
-        let tempdir = self.mk_temp_dir()?;        // should delete dir when scope destroyed
+        let tempdir = self.mk_temp_dir()?; // should delete dir when scope destroyed
         let path = tempdir.to_path()?;
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
@@ -145,7 +145,9 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
-    impl ToFile for String { type Error = (); }
+    impl ToFile for String {
+        type Error = ();
+    }
     impl ToPath for String {
         type Error = ();
         fn to_path(&self) -> Result<PathBuf, Self::Error> {
@@ -221,8 +223,12 @@ mod tests {
         type File = <FS as FileSystem>::TempFile;
     }
     impl S3 for SSS {
-        fn put_object_file(&self, from: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
-        {
+        fn put_object_file(
+            &self,
+            from: &Self::File,
+            bucket: &str,
+            key: &str,
+        ) -> Result<(), Self::Error> {
             match self {
                 Some((f, b, k)) => {
                     if from == f && b == bucket && k == key {
@@ -271,7 +277,6 @@ mod tests {
         fn mk_temp_dir(&self) -> Result<Self::TempDirectory, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
-
     }
 
     impl GitTypes for R2 {
@@ -300,7 +305,12 @@ mod tests {
     }
 
     impl S3 for R2 {
-        fn put_object_file(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error> {
+        fn put_object_file(
+            &self,
+            file: &Self::File,
+            bucket: &str,
+            key: &str,
+        ) -> Result<(), Self::Error> {
             self.s3.put_object_file(file, bucket, key)
         }
     }

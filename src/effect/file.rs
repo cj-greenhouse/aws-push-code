@@ -1,5 +1,5 @@
-use std::path::{PathBuf};
 use std::fs::File;
+use std::path::PathBuf;
 use tempfile::{self, NamedTempFile, TempDir};
 
 pub trait InIO {}
@@ -22,8 +22,7 @@ pub trait FileSystemTypes {
     type Error;
 }
 
-pub trait FileSystem: FileSystemTypes
- {
+pub trait FileSystem: FileSystemTypes {
     type TempFile: ToFile;
     type TempDirectory: ToPath;
 
@@ -38,14 +37,14 @@ pub trait FileSystem: FileSystemTypes
 
 impl ToFile for NamedTempFile {
     type Error = std::io::Error;
-    fn to_file(&self) -> Result <File, Self::Error> {
+    fn to_file(&self) -> Result<File, Self::Error> {
         self.reopen()
     }
 }
 
 impl ToPath for TempDir {
     type Error = std::io::Error;
-    fn to_path(&self) -> Result <PathBuf, Self::Error> {
+    fn to_path(&self) -> Result<PathBuf, Self::Error> {
         Ok(self.path().to_owned())
     }
 }
@@ -65,5 +64,4 @@ where
     fn mk_temp_file(&self) -> Result<Self::TempFile, Self::Error> {
         Ok(NamedTempFile::new()?)
     }
-
 }

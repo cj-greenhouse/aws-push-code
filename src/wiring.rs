@@ -1,4 +1,4 @@
-use crate::effect::file::{self, FileSystemTypes, FileSystem};
+use crate::effect::file::{self, FileSystem, FileSystemTypes};
 use crate::effect::repo::{self, GitTypes};
 use crate::effect::s3::{self, S3Types};
 use crate::effect::zip::{self, ZipTypes};

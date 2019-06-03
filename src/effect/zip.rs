@@ -1,12 +1,11 @@
+use crate::effect::file::ToFile;
 use std::fs::File;
-use std::io::{Read, Seek, Write, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
 use zip::result::ZipError;
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
-use crate::effect::file::ToFile;
-
 
 pub trait ZipTypes {
     type Error;
@@ -26,7 +25,7 @@ where
     T: ZipTypes + InIO,
     <T as ZipTypes>::Error: From<ZipError>,
     <T as ZipTypes>::Error: From<std::io::Error>,
-    <T as ZipTypes>::Error: From<<<T as ZipTypes>::File as ToFile>::Error>
+    <T as ZipTypes>::Error: From<<<T as ZipTypes>::File as ToFile>::Error>,
 {
     fn zip_directory(&self, dir: &Path, arch: &Self::File) -> Result<(), Self::Error> {
         if !dir.is_dir() {
@@ -59,10 +58,13 @@ where
         arch.sync_data()?;
         Ok(())
     }
-
 }
 
-fn zipd<T>(writer: &mut T, prefix: &Path, it: &mut Iterator<Item = DirEntry>) -> Result<(), ZipError>
+fn zipd<T>(
+    writer: &mut T,
+    prefix: &Path,
+    it: &mut Iterator<Item = DirEntry>,
+) -> Result<(), ZipError>
 where
     T: Write + Seek,
 {
