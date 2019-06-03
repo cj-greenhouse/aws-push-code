@@ -41,7 +41,7 @@ where
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory_g(&path, &archive)?;
-        self.put_object_file_g(&archive, s3_bucket, s3_key)?;
+        self.put_object_file(&archive, s3_bucket, s3_key)?;
         Ok(())
     }
 }
@@ -221,7 +221,7 @@ mod tests {
         type File = <FS as FileSystem>::TempFile;
     }
     impl S3 for SSS {
-        fn put_object_file_g(&self, from: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
+        fn put_object_file(&self, from: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
         {
             match self {
                 Some((f, b, k)) => {
@@ -303,8 +303,8 @@ mod tests {
     }
 
     impl S3 for R2 {
-        fn put_object_file_g(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error> {
-            self.s3.put_object_file_g(file, bucket, key)
+        fn put_object_file(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error> {
+            self.s3.put_object_file(file, bucket, key)
         }
     }
 

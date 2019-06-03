@@ -15,18 +15,8 @@ pub trait S3Types {
 
 pub trait S3: S3Types
 {
-    // fn put_object(&self, _file: &Path, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
-    //     unimplemented!();
-    // }
-
-    fn put_object_file(&self, _file: File, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
-        unimplemented!();
-    }
-    fn put_object_file_g(&self, _file: &Self::File, _bucket: &str, _key: &str) -> Result<(), Self::Error>
+    fn put_object_file(&self, _file: &Self::File, _bucket: &str, _key: &str) -> Result<(), Self::Error>
     {
-        unimplemented!();
-    }
-    fn put_object_stream<S: Stream<Error = std::io::Error, Item = Bytes> + Send + 'static>(&self, _stream: S, _length: i64, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
         unimplemented!();
     }
 }
@@ -45,30 +35,13 @@ where
     <T as S3Types>::Error: From<RusotoError<PutObjectError>>,
     <T as S3Types>::Error: From<<<T as S3Types>::File as ToFile>::Error>
 {
-    // fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
-    //     let file = File::open(file)?;
-    //     self.put_object_file(file, bucket, key)?;
-    //     Ok(())
-    // }
-
-    fn put_object_file_g(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
+    fn put_object_file(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
     {
-        let file = file.to_file()?;
-        self.put_object_file(file, bucket, key)?;
-        Ok(())
-    }
-
-    fn put_object_file(&self, mut file: File, bucket: &str, key: &str) -> Result<(), Self::Error> {
+        let mut file = file.to_file()?;
         let length = file.seek(SeekFrom::End(0))? as i64;
         file.seek(SeekFrom::Start(0))?;
         let fs = FsPool::default();
-        let read_stream = fs.read_file(file, Default::default());
-        self.put_object_stream(read_stream, length, bucket, key)?;
-        Ok(())
-    }
-
-    fn put_object_stream<S: Stream<Error = std::io::Error, Item = Bytes> + Send + 'static>(&self, stream: S, length: i64, bucket: &str, key: &str) -> Result<(), Self::Error>
-         {
+        let stream = fs.read_file(file, Default::default());
         let s3 = S3Client::new(Region::default());
 
         let request = PutObjectRequest {
@@ -82,4 +55,6 @@ where
         s3.put_object(request).sync()?;
         Ok(())
     }
+
 }
+
