@@ -40,7 +40,7 @@ where
         let path = tempdir.to_path()?;
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
-        self.zip_directory_g(&path, &archive)?;
+        self.zip_directory(&path, &archive)?;
         self.put_object_file(&archive, s3_bucket, s3_key)?;
         Ok(())
     }
@@ -201,7 +201,7 @@ mod tests {
     }
 
     impl Zip for ZIP {
-        fn zip_directory_g(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
+        fn zip_directory(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
             match self {
                 Some((f, t)) => {
                     if f == from.to_str().unwrap() && t == to {
@@ -289,11 +289,8 @@ mod tests {
     }
 
     impl Zip for R2 {
-        fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
+        fn zip_directory(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
             self.zip.zip_directory(from, to)
-        }
-        fn zip_directory_g(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
-            self.zip.zip_directory_g(from, to)
         }
     }
 
