@@ -1,4 +1,4 @@
-use crate::effect::file::{self, FileSystemTypes};
+use crate::effect::file::{self, FileSystemTypes, FileSystem};
 use crate::effect::repo::{self, GitTypes};
 use crate::effect::s3::{self, S3Types};
 use crate::effect::zip::{self, ZipTypes};
@@ -24,11 +24,13 @@ impl file::InIO for Runtime {}
 
 impl ZipTypes for Runtime {
     type Error = RuntimeError;
+    type File = <Runtime as FileSystem>::TempFile;
 }
 impl zip::InIO for Runtime {}
 
 impl S3Types for Runtime {
     type Error = RuntimeError;
+    type File = <Runtime as FileSystem>::TempFile;
 }
 impl s3::InIO for Runtime {}
 

@@ -10,19 +10,19 @@ use crate::effect::file::ToFile;
 
 pub trait S3Types {
     type Error;
+    type File: ToFile;
 }
 
 pub trait S3: S3Types
 {
-    fn put_object(&self, _file: &Path, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
-        unimplemented!();
-    }
+    // fn put_object(&self, _file: &Path, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
+    //     unimplemented!();
+    // }
+
     fn put_object_file(&self, _file: File, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
         unimplemented!();
     }
-    fn put_object_file_g<F: ToFile>(&self, _file: &F, _bucket: &str, _key: &str) -> Result<(), Self::Error>
-    where
-        <Self as S3Types>::Error: From<<F as ToFile>::Error>
+    fn put_object_file_g(&self, _file: &Self::File, _bucket: &str, _key: &str) -> Result<(), Self::Error>
     {
         unimplemented!();
     }
@@ -43,16 +43,15 @@ where
     T: S3Types + InIO,
     <T as S3Types>::Error: From<std::io::Error>,
     <T as S3Types>::Error: From<RusotoError<PutObjectError>>,
+    <T as S3Types>::Error: From<<<T as S3Types>::File as ToFile>::Error>
 {
-    fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
-        let file = File::open(file)?;
-        self.put_object_file(file, bucket, key)?;
-        Ok(())
-    }
+    // fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
+    //     let file = File::open(file)?;
+    //     self.put_object_file(file, bucket, key)?;
+    //     Ok(())
+    // }
 
-    fn put_object_file_g<F: ToFile>(&self, file: &F, bucket: &str, key: &str) -> Result<(), Self::Error>
-    where
-        <T as S3Types>::Error: From<<F as ToFile>::Error>
+    fn put_object_file_g(&self, file: &Self::File, bucket: &str, key: &str) -> Result<(), Self::Error>
     {
         let file = file.to_file()?;
         self.put_object_file(file, bucket, key)?;

@@ -5,9 +5,12 @@ use walkdir::{DirEntry, WalkDir};
 use zip::result::ZipError;
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
+use crate::effect::file::ToFile;
+
 
 pub trait ZipTypes {
     type Error;
+    type File: ToFile;
 }
 
 pub trait Zip: ZipTypes {
@@ -15,6 +18,9 @@ pub trait Zip: ZipTypes {
         unimplemented!();
     }
     fn zip_directory_f(&self, _from: &Path, _to: &mut File) -> Result<(), Self::Error> {
+        unimplemented!();
+    }
+    fn zip_directory_g(&self, _from: &Path, _to: &Self::File) -> Result<(), Self::Error> {
         unimplemented!();
     }
 }
@@ -26,12 +32,44 @@ where
     T: ZipTypes + InIO,
     <T as ZipTypes>::Error: From<ZipError>,
     <T as ZipTypes>::Error: From<std::io::Error>,
+    <T as ZipTypes>::Error: From<<<T as ZipTypes>::File as ToFile>::Error>
 {
     fn zip_directory(&self, dir: &Path, arch: &Path) -> Result<(), Self::Error> {
         let mut arch = File::create(&arch)?;
         self.zip_directory_f(dir, &mut arch)
     }
 
+    fn zip_directory_g(&self, dir: &Path, arch: &Self::File) -> Result<(), Self::Error> {
+        if !dir.is_dir() {
+            return Err(Self::Error::from(ZipError::FileNotFound));
+        }
+
+        let mut arch = arch.to_file()?;
+
+        arch.seek(SeekFrom::Start(0))?;
+        arch.set_len(0)?;
+
+        let walk = WalkDir::new(dir).into_iter();
+        zipd(
+            &mut arch,
+            dir,
+            &mut walk.filter_map(|e| match e {
+                Ok(entry) => {
+                    let path = entry.path();
+                    let name = path.strip_prefix(Path::new(dir)).unwrap();
+                    let name = name.to_str()?;
+                    if name != ".git" && (name.len() < 5 || &name[0..5] != ".git/") {
+                        Some(entry)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            }),
+        )?;
+        arch.sync_data()?;
+        Ok(())
+    }
     fn zip_directory_f(&self, dir: &Path, arch: &mut File) -> Result<(), Self::Error> {
         if !dir.is_dir() {
             return Err(Self::Error::from(ZipError::FileNotFound));
