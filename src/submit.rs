@@ -36,9 +36,9 @@ where
         s3_bucket: &str,
         s3_key: &str,
     ) -> Result<(), Self::Error> {
-        let tempdir = self.mk_temp_dir_n()?;        // should delete dir when scope destroyed
+        let tempdir = self.mk_temp_dir()?;        // should delete dir when scope destroyed
         let path = tempdir.to_path()?;
-        let archive = self.mk_temp_file_n()?;
+        let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory_g(&path, &archive)?;
         self.put_object_file_g(&archive, s3_bucket, s3_key)?;
@@ -160,19 +160,14 @@ mod tests {
     impl FileSystem for FS {
         type TempFile = String;
         type TempDirectory = String;
-        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
-            match &self.1 {
-                Some(p) => Ok(PathBuf::from(p)),
-                None => Err(()),
-            }
-        }
-        fn mk_temp_dir_n(&self) -> Result<String, Self::Error> {
+
+        fn mk_temp_dir(&self) -> Result<String, Self::Error> {
             match &self.0 {
                 Some(p) => Ok(p.clone()),
                 None => Err(()),
             }
         }
-        fn mk_temp_file_n(&self) -> Result<String, Self::Error> {
+        fn mk_temp_file(&self) -> Result<String, Self::Error> {
             match &self.1 {
                 Some(p) => Ok(p.clone()),
                 None => Err(()),
@@ -270,11 +265,11 @@ mod tests {
     impl FileSystem for R2 {
         type TempFile = <FS as FileSystem>::TempFile;
         type TempDirectory = <FS as FileSystem>::TempDirectory;
-        fn mk_temp_file_n(&self) -> Result<Self::TempFile, Self::Error> {
-            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file_n()
+        fn mk_temp_file(&self) -> Result<Self::TempFile, Self::Error> {
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file()
         }
-        fn mk_temp_dir_n(&self) -> Result<Self::TempDirectory, Self::Error> {
-            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir_n()
+        fn mk_temp_dir(&self) -> Result<Self::TempDirectory, Self::Error> {
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
 
     }

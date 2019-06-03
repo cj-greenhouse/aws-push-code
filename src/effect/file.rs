@@ -27,15 +27,11 @@ pub trait FileSystem: FileSystemTypes
     type TempFile: ToFile;
     type TempDirectory: ToPath;
 
-    fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+    fn mk_temp_dir(&self) -> Result<Self::TempDirectory, Self::Error> {
         unimplemented!();
     }
 
-    fn mk_temp_dir_n(&self) -> Result<Self::TempDirectory, Self::Error> {
-        unimplemented!();
-    }
-
-    fn mk_temp_file_n(&self) -> Result<Self::TempFile, Self::Error> {
+    fn mk_temp_file(&self) -> Result<Self::TempFile, Self::Error> {
         unimplemented!();
     }
 }
@@ -62,17 +58,11 @@ where
     type TempFile = NamedTempFile;
     type TempDirectory = TempDir;
 
-    fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
-        let file = NamedTempFile::new()?;
-        let file = file.path().to_owned();
-        Ok(file)
-    }
-
-    fn mk_temp_dir_n(&self) -> Result<Self::TempDirectory, Self::Error> {
+    fn mk_temp_dir(&self) -> Result<Self::TempDirectory, Self::Error> {
         Ok(TempDir::new()?)
     }
 
-    fn mk_temp_file_n(&self) -> Result<Self::TempFile, Self::Error> {
+    fn mk_temp_file(&self) -> Result<Self::TempFile, Self::Error> {
         Ok(NamedTempFile::new()?)
     }
 
