@@ -157,12 +157,6 @@ mod tests {
     impl FileSystem for FS {
         type TempFile = String;
         type TempDirectory = String;
-        // fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-        //     match &self.0 {
-        //         Some(p) => Ok(PathBuf::from(p)),
-        //         None => Err(()),
-        //     }
-        // }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
             match &self.1 {
                 Some(p) => Ok(PathBuf::from(p)),
@@ -270,9 +264,6 @@ mod tests {
     impl FileSystem for R2 {
         type TempFile = <FS as FileSystem>::TempFile;
         type TempDirectory = <FS as FileSystem>::TempDirectory;
-        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
-        }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file()
         }

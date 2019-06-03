@@ -6,16 +6,24 @@ use std::fs::{File};
 use std::io::{Seek, SeekFrom};
 use std::path::Path;
 use futures::Stream;
+use crate::effect::file::ToFile;
 
 pub trait S3Types {
     type Error;
 }
 
-pub trait S3: S3Types {
+pub trait S3: S3Types
+{
     fn put_object(&self, _file: &Path, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
         unimplemented!();
     }
     fn put_object_file(&self, _file: File, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
+        unimplemented!();
+    }
+    fn put_object_file_g<F: ToFile>(&self, _file: &F, _bucket: &str, _key: &str) -> Result<(), Self::Error>
+    where
+        <Self as S3Types>::Error: From<<F as ToFile>::Error>
+    {
         unimplemented!();
     }
     fn put_object_stream<S: Stream<Error = std::io::Error, Item = Bytes> + Send + 'static>(&self, _stream: S, _length: i64, _bucket: &str, _key: &str) -> Result<(), Self::Error> {
@@ -38,6 +46,15 @@ where
 {
     fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
         let file = File::open(file)?;
+        self.put_object_file(file, bucket, key)?;
+        Ok(())
+    }
+
+    fn put_object_file_g<F: ToFile>(&self, file: &F, bucket: &str, key: &str) -> Result<(), Self::Error>
+    where
+        <T as S3Types>::Error: From<<F as ToFile>::Error>
+    {
+        let file = file.to_file()?;
         self.put_object_file(file, bucket, key)?;
         Ok(())
     }
