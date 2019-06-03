@@ -1,4 +1,4 @@
-use crate::effect::file::{FileSystem, FileSystemTypes};
+use crate::effect::file::{FileSystem, FileSystemTypes, ToFile, ToPath};
 use crate::effect::repo::{Git, GitTypes};
 use crate::effect::s3::{S3Types, S3};
 use crate::effect::zip::{Zip, ZipTypes};
@@ -20,11 +20,15 @@ pub trait Submit: SubmitTypes {
 
 impl<T> Submit for T
 where
-    T: Git + FileSystem + SubmitTypes + Zip + S3,
+    T: Git + FileSystem + SubmitTypes,
+    T: Zip<File = <T as FileSystem>::TempFile>,
+    T: S3<File = <T as FileSystem>::TempFile>,
     <T as SubmitTypes>::Error: From<<T as FileSystemTypes>::Error>
         + From<<T as GitTypes>::Error>
         + From<<T as S3Types>::Error>
-        + From<<T as ZipTypes>::Error>,
+        + From<<T as ZipTypes>::Error>
+        + From<<<T as FileSystem>::TempDirectory as ToPath>::Error>
+        + From<<<T as FileSystem>::TempFile as ToFile>::Error>,
 {
     fn submit_to_pipeline(
         &self,
@@ -32,11 +36,12 @@ where
         s3_bucket: &str,
         s3_key: &str,
     ) -> Result<(), Self::Error> {
-        let path = self.mk_temp_dir()?;
+        let tempdir = self.mk_temp_dir()?; // should delete dir when scope destroyed
+        let path = tempdir.to_path()?;
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory(&path, &archive)?;
-        self.put_object(&archive, s3_bucket, s3_key)?;
+        self.put_object_file(&archive, s3_bucket, s3_key)?;
         Ok(())
     }
 }
@@ -140,20 +145,33 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
+    impl ToFile for String {
+        type Error = ();
+    }
+    impl ToPath for String {
+        type Error = ();
+        fn to_path(&self) -> Result<PathBuf, Self::Error> {
+            Ok(Path::new(self).to_owned())
+        }
+    }
+
     type FS = (Option<String>, Option<String>);
     impl FileSystemTypes for FS {
         type Error = ();
     }
     impl FileSystem for FS {
-        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
+        type TempFile = String;
+        type TempDirectory = String;
+
+        fn mk_temp_dir(&self) -> Result<String, Self::Error> {
             match &self.0 {
-                Some(p) => Ok(PathBuf::from(p)),
+                Some(p) => Ok(p.clone()),
                 None => Err(()),
             }
         }
-        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+        fn mk_temp_file(&self) -> Result<String, Self::Error> {
             match &self.1 {
-                Some(p) => Ok(PathBuf::from(p)),
+                Some(p) => Ok(p.clone()),
                 None => Err(()),
             }
         }
@@ -181,13 +199,14 @@ mod tests {
     type ZIP = Option<(String, String)>;
     impl ZipTypes for ZIP {
         type Error = ();
+        type File = <FS as FileSystem>::TempFile;
     }
 
     impl Zip for ZIP {
-        fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
+        fn zip_directory(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
             match self {
                 Some((f, t)) => {
-                    if f == from.to_str().unwrap() && t == to.to_str().unwrap() {
+                    if f == from.to_str().unwrap() && t == to {
                         Ok(())
                     } else {
                         Err(())
@@ -201,12 +220,18 @@ mod tests {
     type SSS = Option<(String, String, String)>;
     impl S3Types for SSS {
         type Error = ();
+        type File = <FS as FileSystem>::TempFile;
     }
     impl S3 for SSS {
-        fn put_object(&self, from: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
+        fn put_object_file(
+            &self,
+            from: &Self::File,
+            bucket: &str,
+            key: &str,
+        ) -> Result<(), Self::Error> {
             match self {
                 Some((f, b, k)) => {
-                    if f == from.to_str().unwrap() && b == bucket && k == key {
+                    if from == f && b == bucket && k == key {
                         Ok(())
                     } else {
                         Err(())
@@ -244,11 +269,13 @@ mod tests {
         type Error = <FS as FileSystemTypes>::Error;
     }
     impl FileSystem for R2 {
-        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
-        }
-        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+        type TempFile = <FS as FileSystem>::TempFile;
+        type TempDirectory = <FS as FileSystem>::TempDirectory;
+        fn mk_temp_file(&self) -> Result<Self::TempFile, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file()
+        }
+        fn mk_temp_dir(&self) -> Result<Self::TempDirectory, Self::Error> {
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
     }
 
@@ -263,21 +290,28 @@ mod tests {
 
     impl ZipTypes for R2 {
         type Error = <ZIP as ZipTypes>::Error;
+        type File = <ZIP as ZipTypes>::File;
     }
 
     impl Zip for R2 {
-        fn zip_directory(&self, from: &Path, to: &Path) -> Result<(), Self::Error> {
+        fn zip_directory(&self, from: &Path, to: &Self::File) -> Result<(), Self::Error> {
             self.zip.zip_directory(from, to)
         }
     }
 
     impl S3Types for R2 {
         type Error = <SSS as S3Types>::Error;
+        type File = <SSS as S3Types>::File;
     }
 
     impl S3 for R2 {
-        fn put_object(&self, file: &Path, bucket: &str, key: &str) -> Result<(), Self::Error> {
-            self.s3.put_object(file, bucket, key)
+        fn put_object_file(
+            &self,
+            file: &Self::File,
+            bucket: &str,
+            key: &str,
+        ) -> Result<(), Self::Error> {
+            self.s3.put_object_file(file, bucket, key)
         }
     }
 

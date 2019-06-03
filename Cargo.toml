@@ -5,6 +5,7 @@ authors = ["Greg Wiley <aztec.rex@jammm.com>"]
 edition = "2018"
 
 [dependencies]
+bytes = "0.4.12"
 futures = "0.1.26"
 futures-fs = "0.0.5"
 git2 = "0.8.0"

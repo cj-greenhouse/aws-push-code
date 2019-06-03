@@ -57,6 +57,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "aws-push-code"
 version = "0.1.0"
 dependencies = [
+ "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-fs 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "git2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
