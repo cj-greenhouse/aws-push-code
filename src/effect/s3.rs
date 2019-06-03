@@ -4,9 +4,7 @@ use futures::Stream;
 use futures_fs::FsPool;
 use rusoto_core::{Region, RusotoError};
 use rusoto_s3::{PutObjectError, PutObjectRequest, S3Client, StreamingBody, S3 as _S3};
-use std::fs::File;
 use std::io::{Seek, SeekFrom};
-use std::path::Path;
 
 pub trait S3Types {
     type Error;
