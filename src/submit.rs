@@ -1,4 +1,4 @@
-use crate::effect::file::{FileSystem, FileSystemTypes};
+use crate::effect::file::{FileSystem, FileSystemTypes, ToFile, ToPath};
 use crate::effect::repo::{Git, GitTypes};
 use crate::effect::s3::{S3Types, S3};
 use crate::effect::zip::{Zip, ZipTypes};
@@ -140,11 +140,16 @@ mod tests {
         assert_eq!(actual, Err(()));
     }
 
+    impl ToFile for String { type Error = (); }
+    impl ToPath for String { type Error = (); }
+
     type FS = (Option<String>, Option<String>);
     impl FileSystemTypes for FS {
         type Error = ();
     }
     impl FileSystem for FS {
+        type TempFile = String;
+        type TempDirectory = String;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             match &self.0 {
                 Some(p) => Ok(PathBuf::from(p)),
@@ -244,6 +249,8 @@ mod tests {
         type Error = <FS as FileSystemTypes>::Error;
     }
     impl FileSystem for R2 {
+        type TempFile = String;
+        type TempDirectory = String;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }

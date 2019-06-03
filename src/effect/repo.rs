@@ -28,7 +28,7 @@ where
         callbacks.credentials(|_, _, _| greg());
         fetch_options.remote_callbacks(callbacks);
         builder.fetch_options(fetch_options);
-        let repo = builder.clone(url, Path::new(dir))?;
+        let repo = builder.clone(url, dir)?;
 
         let mut co = CheckoutBuilder::new();
         co.force();
