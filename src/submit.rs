@@ -24,7 +24,8 @@ where
     <T as SubmitTypes>::Error: From<<T as FileSystemTypes>::Error>
         + From<<T as GitTypes>::Error>
         + From<<T as S3Types>::Error>
-        + From<<T as ZipTypes>::Error>,
+        + From<<T as ZipTypes>::Error>
+        + From<<<T as FileSystem>::TempDirectory as ToPath>::Error>,
 {
     fn submit_to_pipeline(
         &self,
@@ -32,7 +33,8 @@ where
         s3_bucket: &str,
         s3_key: &str,
     ) -> Result<(), Self::Error> {
-        let path = self.mk_temp_dir()?;
+        let tempdir = self.mk_temp_dir_n()?;        // should delete dir when scope destroyed
+        let path = tempdir.to_path()?;
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory(&path, &archive)?;
@@ -141,7 +143,12 @@ mod tests {
     }
 
     impl ToFile for String { type Error = (); }
-    impl ToPath for String { type Error = (); }
+    impl ToPath for String {
+        type Error = ();
+        fn to_path(&self) -> Result<PathBuf, Self::Error> {
+            Ok(Path::new(self).to_owned())
+        }
+    }
 
     type FS = (Option<String>, Option<String>);
     impl FileSystemTypes for FS {
@@ -150,15 +157,27 @@ mod tests {
     impl FileSystem for FS {
         type TempFile = String;
         type TempDirectory = String;
-        fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
-            match &self.0 {
+        // fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
+        //     match &self.0 {
+        //         Some(p) => Ok(PathBuf::from(p)),
+        //         None => Err(()),
+        //     }
+        // }
+        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+            match &self.1 {
                 Some(p) => Ok(PathBuf::from(p)),
                 None => Err(()),
             }
         }
-        fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
+        fn mk_temp_dir_n(&self) -> Result<String, Self::Error> {
+            match &self.0 {
+                Some(p) => Ok(p.clone()),
+                None => Err(()),
+            }
+        }
+        fn mk_temp_file_n(&self) -> Result<String, Self::Error> {
             match &self.1 {
-                Some(p) => Ok(PathBuf::from(p)),
+                Some(p) => Ok(p.clone()),
                 None => Err(()),
             }
         }
@@ -249,13 +268,16 @@ mod tests {
         type Error = <FS as FileSystemTypes>::Error;
     }
     impl FileSystem for R2 {
-        type TempFile = String;
-        type TempDirectory = String;
+        type TempFile = <FS as FileSystem>::TempFile;
+        type TempDirectory = <FS as FileSystem>::TempDirectory;
         fn mk_temp_dir(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir()
         }
         fn mk_temp_file(&self) -> Result<PathBuf, Self::Error> {
             (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_file()
+        }
+        fn mk_temp_dir_n(&self) -> Result<Self::TempDirectory, Self::Error> {
+            (self.tmpdir.clone(), self.tmpfile.clone()).mk_temp_dir_n()
         }
     }
 
