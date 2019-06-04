@@ -7,7 +7,7 @@ pub trait SecretsTypes {
 
 
 pub trait Secrets : SecretsTypes {
-    fn secrets(&self, key: &str) -> Result<String, Self::Error> { unimplemented!(); }
+    fn secrets(&self, _key: &str) -> Result<String, Self::Error> { unimplemented!(); }
 }
 
 pub trait InAWS {}

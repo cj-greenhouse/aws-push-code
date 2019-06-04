@@ -75,7 +75,7 @@ impl From<secret::SecretsAWSError> for RuntimeError {
 
 impl From<String> for RuntimeError {
     fn from(error: String) -> Self {
-        RuntimeError(format!("{}", error))
+        RuntimeError(format!("ERR: {}", error))
     }
 }
 
