@@ -48,6 +48,7 @@ functions:
     events:
       - sqs:
           arn: !GetAtt WorkQueue.Arn
+          batchSize: 1
     vpc:
           securityGroupIds:
             - !ImportValue network-AttachedNetworkDefaultSecurityGroup

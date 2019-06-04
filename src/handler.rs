@@ -4,6 +4,8 @@ use rusoto_sqs::{SendMessageRequest, Sqs, SqsClient};
 use serde::{Deserialize, Serialize};
 use serde_json::{map::Map, Value};
 use std::env;
+use crate::wiring::Runtime;
+use crate::submit::Submit;
 
 #[derive(Deserialize, Debug)]
 pub struct HookEnvelope {
@@ -78,5 +80,9 @@ pub fn work_handler(work: Value, _c: Context) -> Result<(), HandlerError> {
         .collect();
 
     println!("performing work: {:?}", work);
+    let runtime = Runtime::default();
+    for work in work {
+        runtime.submit_to_pipeline(&work.source_url, &work.dest_bucket, &work.dest_key).unwrap();
+    }
     Ok(())
 }
