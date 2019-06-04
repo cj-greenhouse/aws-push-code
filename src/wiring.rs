@@ -1,8 +1,8 @@
 use crate::effect::file::{self, FileSystem, FileSystemTypes};
 use crate::effect::repo::{self, GitTypes};
 use crate::effect::s3::{self, S3Types};
-use crate::effect::zip::{self, ZipTypes};
 use crate::effect::secret::{self, SecretsTypes};
+use crate::effect::zip::{self, ZipTypes};
 use crate::submit::SubmitTypes;
 
 pub struct Runtime;
@@ -45,7 +45,6 @@ impl SubmitTypes for Runtime {
     type Error = RuntimeError;
 }
 
-
 #[derive(Debug)]
 pub struct RuntimeError(String);
 
@@ -79,10 +78,8 @@ impl From<String> for RuntimeError {
     }
 }
 
-
 impl From<rusoto_core::RusotoError<rusoto_s3::PutObjectError>> for RuntimeError {
     fn from(error: rusoto_core::RusotoError<rusoto_s3::PutObjectError>) -> Self {
         RuntimeError(format!("Rusoto: {}", error))
     }
 }
-
