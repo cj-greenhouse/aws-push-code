@@ -4,7 +4,7 @@ provider:
   runtime: rust
   memorySize: 128
   stage: prod
-  region: us-east-1
+  region: us-west-1
 
   iamRoleStatements:
     - Effect: "Allow"
@@ -12,9 +12,19 @@ provider:
         - sqs:*
       Resource:
         - !GetAtt WorkQueue.Arn
+    - Effect: "Allow"
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource:
+        - !Ref GitCredential
 
   environment:
     PUSHCODE_WORK_QUEUE: !Ref WorkQueue
+    CJ_PUSHCODE_GIT_CREDENTIALS_ID: !Join
+        - "/"
+        - - !Ref AWS::StackName
+          - GitCredential
+
 
 package:
   individually: true
@@ -38,6 +48,12 @@ functions:
     events:
       - sqs:
           arn: !GetAtt WorkQueue.Arn
+    vpc:
+          securityGroupIds:
+            - !ImportValue network-AttachedNetworkDefaultSecurityGroup
+          subnetIds:
+            - !ImportValue network-AttachedNetworkLeftSubnet
+            - !ImportValue network-AttachedNetworkRightSubnet
 
 resources:
   Resources:
@@ -48,5 +64,12 @@ resources:
       Properties:
           VersioningConfiguration:
               Status: Enabled
-
+    GitCredential:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: !Join
+          - "/"
+          - - !Ref AWS::StackName
+            - GitCredential
+        SecretString: "REPLACEME"
 
