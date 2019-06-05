@@ -47,4 +47,10 @@ Run from the command line with `cargo run --bin main <REPO> <BUCKET> <KEY>`
 to upload the contents of REPO to BUCKET under key, KEY; e.g.
 `cargo run --bin main 'git@github.com:cj-greenhouse/aws-push-code.git' pipelinesources-19203492 master.zip`
 
+If you receive an S3 redirection error, set the AWS_REGION environment variable
+to where your bucket was created. This seems to be a bug in the rusoto
+library.
 
+If the repo is private, put a suitable private SSH key into secrets manager
+and set the CJ_PUSHCODE_GIT_CREDENTIALS_ID environment to the ID of the
+secret.
