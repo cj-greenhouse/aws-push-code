@@ -17,6 +17,19 @@ provider:
         - secretsmanager:GetSecretValue
       Resource:
         - !Ref GitCredential
+    - Effect: "Allow"
+      Action:
+        - s3:PutObject
+      Resource:
+        - !Join
+          - ""
+          - - !GetAtt SourceStore.Arn
+            - "/*"
+    # - Effect: "Allow"
+    #   Action:
+    #     - sns:Publish
+    #   Resource:
+    #     - !Ref ErrorTopic
 
   environment:
     PUSHCODE_WORK_QUEUE: !Ref WorkQueue
@@ -24,6 +37,8 @@ provider:
         - "/"
         - - !Ref AWS::StackName
           - GitCredential
+    CJ_PUSHCODE_SOURCE_BUCKET: !Ref SourceStore
+    RUST_BACKTRACE: "1"
 
 
 package:
@@ -49,6 +64,7 @@ functions:
       - sqs:
           arn: !GetAtt WorkQueue.Arn
           batchSize: 1
+    # onError: !Ref ErrorTopic
     vpc:
           securityGroupIds:
             - !ImportValue network-AttachedNetworkDefaultSecurityGroup
@@ -60,11 +76,17 @@ resources:
   Resources:
     WorkQueue:
       Type: AWS::SQS::Queue
+      Properties:
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+          maxReceiveCount : 2
+
     SourceStore:
       Type: AWS::S3::Bucket
       Properties:
           VersioningConfiguration:
               Status: Enabled
+
     GitCredential:
       Type: AWS::SecretsManager::Secret
       Properties:
@@ -74,3 +96,8 @@ resources:
             - GitCredential
         SecretString: "REPLACEME"
 
+    DeadLetterQueue:
+      Type: AWS::SQS::Queue
+
+    # ErrorTopic:
+    #   Type: AWS::SNS::Topic

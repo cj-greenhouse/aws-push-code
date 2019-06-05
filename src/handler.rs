@@ -18,6 +18,7 @@ pub struct HookEnvelope {
 #[derive(Deserialize, Debug)]
 pub struct Repository {
     git_http_url: String,
+    git_ssh_url: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -45,9 +46,9 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
     println!("accepting git event: {:?}", he);
 
     let cf = PushConfig {
-        source_url: he.repository.git_http_url,
-        dest_bucket: "thesourcebucket".to_owned(),
-        dest_key: "thesourcekey".to_owned(),
+        source_url: he.repository.git_ssh_url,
+        dest_bucket: env::var("CJ_PUSHCODE_SOURCE_BUCKET").unwrap(),
+        dest_key: "master-from-lambda.zip".to_owned(),
     };
 
     let sqs = SqsClient::new(Region::default());
