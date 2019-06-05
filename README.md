@@ -18,10 +18,9 @@ With a few enhancements, it will be generally useful:
 - Generalize the architecture. Right now it is very CJ specific; it
   relies on exported Cloud Formation outputs unique to CJ internal
   architecture.
-- Do something better with failures in the architecture. They just go
-  to a DLQ right now.
+- Do something better with failures. In the default architecture,
+  they just go to a DLQ but they are not processed in any way.
 - Authentication
-
 
 ### Code
 
