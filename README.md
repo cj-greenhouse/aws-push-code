@@ -4,11 +4,34 @@ Grab code from a remote Git repo and put it into S3. Designed as a
 webhook for GitLab but easy to add additional functions to handle
 webhook data from other systems.
 
-## GitLab Integration
+## Status
 
-If your GitLab version doesn't have API key support for webhooks,
-add a query parameter, _apiKey_, with the value of the API key you
-want to use.
+### Features
+
+Currently, this project is MVP for a speficic CD pipeline at CJ.
+With a few enhancements, it will be generally useful:
+
+- Differentiate sources in S3. Currently each source zip object is
+  stored to `master.zip`
+- Add a bit more information to the source metadata (e.g. branch, commit time)
+  to enable additional build logic
+- Generalize the architecture. Right now it is very CJ specific; it
+  relies on exported Cloud Formation outputs unique to CJ internal
+  architecture.
+- Do something better with failures in the architecture. They just go
+  to a DLQ right now.
+- Authentication
+
+
+### Code
+
+- Deepen the testing: right now, the main logic is tested but there is too
+  much untested code in the effects. This is mostly due to my Rust newness.
+  I've been honing my Rust and figuring out the best ways for transitive
+  testing so this should be done in the next few revisions.
+- Make the code a little more OO. Current code is structured similarly to my
+  Haskell code. I'd like to introduce some Object orientation back into it.
+  Still establishing my Rust design sense so this should get better over time.
 
 ## Deploy
 
@@ -54,3 +77,4 @@ library.
 If the repo is private, put a suitable private SSH key into secrets manager
 and set the CJ_PUSHCODE_GIT_CREDENTIALS_ID environment to the ID of the
 secret.
+
