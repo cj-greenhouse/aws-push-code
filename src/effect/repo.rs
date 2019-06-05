@@ -2,6 +2,7 @@ use crate::effect::secret::{Secrets, SecretsTypes};
 use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{Cred, Error, FetchOptions, Oid, RemoteCallbacks};
 use std::path::Path;
+use std::fs;
 
 pub trait GitTypes {
     type Error;
@@ -24,8 +25,7 @@ pub trait GitCredentials {
 impl<T> Git for T
 where
     T: GitTypes + InIO + Secrets + GitCredentials,
-    <T as GitTypes>::Error: From<::git2::Error>,
-    <T as GitTypes>::Error: From<<T as SecretsTypes>::Error>,
+    <T as GitTypes>::Error: From<::git2::Error> + From<<T as SecretsTypes>::Error> + From<std::io::Error>,
 {
     fn clone_repo(&self, url: &str, dir: &Path, target: &str) -> Result<(), Self::Error> {
         let mut builder = RepoBuilder::new();
@@ -56,6 +56,7 @@ where
 
         let obj = commit.as_object();
         repo.checkout_tree(&obj, Some(&mut co))?;
+        fs::write(dir.join("commit-id"), commit.id().to_string())?;
         Ok(())
     }
 }

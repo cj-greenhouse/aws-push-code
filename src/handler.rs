@@ -36,11 +36,6 @@ pub struct PushConfig {
 }
 
 pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError> {
-    // println!("{}", he.headers);
-    // println!("{}", he.queryStringParameters);
-
-    // let body: Value = serde_json::from_str(&he.body).unwrap();
-    // println!("{}", body);
 
     let he: HookEvent = serde_json::from_str(&he.body).unwrap();
     println!("accepting git event: {:?}", he);
@@ -48,7 +43,7 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
     let cf = PushConfig {
         source_url: he.repository.git_ssh_url,
         dest_bucket: env::var("CJ_PUSHCODE_SOURCE_BUCKET").unwrap(),
-        dest_key: "master-from-lambda.zip".to_owned(),
+        dest_key: "master.zip".to_owned(),
     };
 
     let sqs = SqsClient::new(Region::default());
