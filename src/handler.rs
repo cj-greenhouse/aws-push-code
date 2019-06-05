@@ -1,11 +1,11 @@
+use crate::submit::Submit;
+use crate::wiring::Runtime;
 use lambda_runtime::{error::HandlerError, Context};
 use rusoto_core::Region;
 use rusoto_sqs::{SendMessageRequest, Sqs, SqsClient};
 use serde::{Deserialize, Serialize};
 use serde_json::{map::Map, Value};
 use std::env;
-use crate::wiring::Runtime;
-use crate::submit::Submit;
 
 #[derive(Deserialize, Debug)]
 pub struct HookEnvelope {
@@ -37,12 +37,15 @@ pub struct PushConfig {
 }
 
 pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError> {
-
     let he: HookEvent = serde_json::from_str(&he.body).unwrap();
     println!("accepting git event: {:?}", he);
 
     const BRANCH_PREFIX: &str = "refs/heads/";
-    let branch = if he.repo_ref.starts_with(BRANCH_PREFIX) { he.repo_ref.trim_start_matches(BRANCH_PREFIX) } else { "master" };
+    let branch = if he.repo_ref.starts_with(BRANCH_PREFIX) {
+        he.repo_ref.trim_start_matches(BRANCH_PREFIX)
+    } else {
+        "master"
+    };
 
     let cf = PushConfig {
         source_url: he.repository.git_ssh_url,
@@ -83,7 +86,14 @@ pub fn work_handler(work: Value, _c: Context) -> Result<(), HandlerError> {
     println!("performing work: {:?}", work);
     let runtime = Runtime::default();
     for work in work {
-        runtime.submit_to_pipeline(&work.source_url, &work.source_target, &work.dest_bucket, &work.dest_key).unwrap();
+        runtime
+            .submit_to_pipeline(
+                &work.source_url,
+                &work.source_target,
+                &work.dest_bucket,
+                &work.dest_key,
+            )
+            .unwrap();
     }
     Ok(())
 }
