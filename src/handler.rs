@@ -41,7 +41,7 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
     let he: HookEvent = serde_json::from_str(&he.body).unwrap();
     println!("accepting git event: {:?}", he);
 
-    const BRANCH_PREFIX: &str = "/heads/ref/";
+    const BRANCH_PREFIX: &str = "refs/heads/";
     let branch;
     if he.repo_ref.starts_with(BRANCH_PREFIX) {
         branch = he.repo_ref.trim_start_matches(BRANCH_PREFIX);
