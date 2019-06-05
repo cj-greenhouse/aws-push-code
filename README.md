@@ -8,7 +8,7 @@ webhook data from other systems.
 
 ### Features
 
-Currently, this project is MVP for a speficic CD pipeline at CJ.
+Currently, this project is MVP for a specific CD pipeline at CJ.
 With a few enhancements, it will be generally useful:
 
 - Differentiate sources in S3. Currently each source zip object is
