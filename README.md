@@ -4,6 +4,10 @@ Grab code from a remote Git repo and put it into S3. Designed as a
 webhook for GitLab but easy to add additional functions to handle
 webhook data from other systems.
 
+We need this at CJ because AWS Code Pipeline doesn't have Gitlab
+source stage. We have the additional constraint that our Gitlab
+is not on the public Internet.
+
 ## Status
 
 ### Features
@@ -12,7 +16,8 @@ Currently, this project is MVP for a specific CD pipeline at CJ.
 With a few enhancements, it will be generally useful:
 
 - Differentiate sources in S3. Currently each source zip object is
-  stored to `master.zip`
+  stored to `<branch>.zip` where _branch_ is any pushed branch. It
+  doesn't yet differentiate repositories.
 - Add a bit more information to the source metadata (e.g. branch, commit time)
   to enable additional build logic
 - Generalize the architecture. Right now it is very CJ specific; it
