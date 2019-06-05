@@ -42,12 +42,7 @@ pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError>
     println!("accepting git event: {:?}", he);
 
     const BRANCH_PREFIX: &str = "refs/heads/";
-    let branch;
-    if he.repo_ref.starts_with(BRANCH_PREFIX) {
-        branch = he.repo_ref.trim_start_matches(BRANCH_PREFIX);
-    } else {
-        branch = "master";
-    }
+    let branch = if he.repo_ref.starts_with(BRANCH_PREFIX) { he.repo_ref.trim_start_matches(BRANCH_PREFIX) } else { "master" };
 
     let cf = PushConfig {
         source_url: he.repository.git_ssh_url,
