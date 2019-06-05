@@ -85,6 +85,8 @@ where
             zip.add_directory_from_path(name, options)?;
         }
     }
+    // placeholder for more useful build info. probably this will
+    // replace the "commit-id" file generated in the clone effect
     zip.start_file_from_path(Path::new("cjbuildinfo.json"), options)?;
     let buildinfo = format!("{{\"commit\":\"{}\"}}", "abc12349024");
     zip.write_all(buildinfo.as_bytes())?;
