@@ -11,6 +11,7 @@ pub trait Submit: SubmitTypes {
     fn submit_to_pipeline(
         &self,
         _repo_url: &str,
+        _repo_target: &str,
         _s3_bucket: &str,
         _s3_key: &str,
     ) -> Result<(), Self::Error> {
@@ -33,13 +34,14 @@ where
     fn submit_to_pipeline(
         &self,
         repo_url: &str,
+        repo_target: &str,
         s3_bucket: &str,
         s3_key: &str,
     ) -> Result<(), Self::Error> {
         let tempdir = self.mk_temp_dir()?; // should delete dir when scope destroyed
         let path = tempdir.to_path()?;
         let archive = self.mk_temp_file()?;
-        self.clone_repo(repo_url, &path, "master")?;
+        self.clone_repo(repo_url, &path, repo_target)?;
         self.zip_directory(&path, &archive)?;
         println!("put archive {} {}", s3_bucket, s3_key);
         self.put_object_file(&archive, s3_bucket, s3_key)?;
@@ -56,12 +58,13 @@ mod tests {
     #[test]
     fn happy() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
-        let r = R2::test_case(repo, bucket, key, "master");
+        let r = R2::test_case(repo, bucket, key, target);
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Ok(()));
     }
@@ -69,15 +72,16 @@ mod tests {
     #[test]
     fn zip_error() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
         let r = R2 {
             zip: ZIP::default(),
-            ..R2::test_case(repo, bucket, key, "master")
+            ..R2::test_case(repo, bucket, key, target)
         };
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Err(()));
     }
@@ -85,15 +89,16 @@ mod tests {
     #[test]
     fn git_error() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
         let r = R2 {
             git: GIT::default(),
-            ..R2::test_case(repo, bucket, key, "master")
+            ..R2::test_case(repo, bucket, key, target)
         };
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Err(()));
     }
@@ -101,15 +106,16 @@ mod tests {
     #[test]
     fn tmpdir_error() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
         let r = R2 {
             tmpdir: None,
-            ..R2::test_case(repo, bucket, key, "master")
+            ..R2::test_case(repo, bucket, key, target)
         };
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Err(()));
     }
@@ -117,15 +123,16 @@ mod tests {
     #[test]
     fn tmpfile_error() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
         let r = R2 {
             tmpfile: None,
-            ..R2::test_case(repo, bucket, key, "master")
+            ..R2::test_case(repo, bucket, key, target)
         };
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Err(()));
     }
@@ -133,15 +140,16 @@ mod tests {
     #[test]
     fn put_error() {
         let repo = "git@foo:thingbarnone";
+        let target = "somebranch";
         let bucket = "sourcebucket";
         let key = "sourceobjectname";
 
         let r = R2 {
             s3: SSS::default(),
-            ..R2::test_case(repo, bucket, key, "master")
+            ..R2::test_case(repo, bucket, key, target)
         };
 
-        let actual = r.submit_to_pipeline(repo, bucket, key);
+        let actual = r.submit_to_pipeline(repo, target, bucket, key);
 
         assert_eq!(actual, Err(()));
     }

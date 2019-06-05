@@ -12,5 +12,5 @@ fn main() -> Result<(), RuntimeError> {
 
     println!("uploading {} to {}/{}", repo, bucket, key);
 
-    runtime.submit_to_pipeline(repo, bucket, key)
+    runtime.submit_to_pipeline(repo, "master", bucket, key)
 }
