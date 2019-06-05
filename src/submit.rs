@@ -41,6 +41,7 @@ where
         let archive = self.mk_temp_file()?;
         self.clone_repo(repo_url, &path, "master")?;
         self.zip_directory(&path, &archive)?;
+        println!("put archive {} {}", s3_bucket, s3_key);
         self.put_object_file(&archive, s3_bucket, s3_key)?;
         Ok(())
     }

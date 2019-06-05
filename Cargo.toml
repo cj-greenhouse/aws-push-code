@@ -20,8 +20,6 @@ tempfile = "3.0.8"
 walkdir = "2"
 zip = "0.5.2"
 
-
-
 [[bin]]
 name = "accept"
 path = "src/accept.rs"

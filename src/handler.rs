@@ -4,6 +4,8 @@ use rusoto_sqs::{SendMessageRequest, Sqs, SqsClient};
 use serde::{Deserialize, Serialize};
 use serde_json::{map::Map, Value};
 use std::env;
+use crate::wiring::Runtime;
+use crate::submit::Submit;
 
 #[derive(Deserialize, Debug)]
 pub struct HookEnvelope {
@@ -16,6 +18,7 @@ pub struct HookEnvelope {
 #[derive(Deserialize, Debug)]
 pub struct Repository {
     git_http_url: String,
+    git_ssh_url: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -33,19 +36,14 @@ pub struct PushConfig {
 }
 
 pub fn accept_handler(he: HookEnvelope, _c: Context) -> Result<(), HandlerError> {
-    // println!("{}", he.headers);
-    // println!("{}", he.queryStringParameters);
-
-    // let body: Value = serde_json::from_str(&he.body).unwrap();
-    // println!("{}", body);
 
     let he: HookEvent = serde_json::from_str(&he.body).unwrap();
     println!("accepting git event: {:?}", he);
 
     let cf = PushConfig {
-        source_url: he.repository.git_http_url,
-        dest_bucket: "thesourcebucket".to_owned(),
-        dest_key: "thesourcekey".to_owned(),
+        source_url: he.repository.git_ssh_url,
+        dest_bucket: env::var("CJ_PUSHCODE_SOURCE_BUCKET").unwrap(),
+        dest_key: "master.zip".to_owned(),
     };
 
     let sqs = SqsClient::new(Region::default());
@@ -78,5 +76,9 @@ pub fn work_handler(work: Value, _c: Context) -> Result<(), HandlerError> {
         .collect();
 
     println!("performing work: {:?}", work);
+    let runtime = Runtime::default();
+    for work in work {
+        runtime.submit_to_pipeline(&work.source_url, &work.dest_bucket, &work.dest_key).unwrap();
+    }
     Ok(())
 }
