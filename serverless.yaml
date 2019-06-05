@@ -25,11 +25,6 @@ provider:
           - ""
           - - !GetAtt SourceStore.Arn
             - "/*"
-    # - Effect: "Allow"
-    #   Action:
-    #     - sns:Publish
-    #   Resource:
-    #     - !Ref ErrorTopic
 
   environment:
     PUSHCODE_WORK_QUEUE: !Ref WorkQueue
@@ -87,6 +82,31 @@ resources:
           VersioningConfiguration:
               Status: Enabled
 
+    SourceStoreReadPolicy:
+      Type: AWS::IAM::ManagedPolicy
+      Properties:
+        # Annoying! Cannot use YAML here. Serverless is doing something that causes it to be invalid
+        PolicyDocument: {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:ListBucket",
+                "s3:GetBucketVersioning"
+              ],
+              "Resource": [
+                "Fn::Join": ["", [{"Fn::GetAtt": "SourceStore.Arn"}, "/*"]],
+                {"Fn::GetAtt": "SourceStore.Arn"}
+              ]
+            }
+          ]
+        }
+
+
+
     GitCredential:
       Type: AWS::SecretsManager::Secret
       Properties:
@@ -99,5 +119,18 @@ resources:
     DeadLetterQueue:
       Type: AWS::SQS::Queue
 
-    # ErrorTopic:
-    #   Type: AWS::SNS::Topic
+  Outputs:
+    SourceStore:
+      Value: !Ref SourceStore
+      Export:
+        Name: !Join
+          - ":"
+          - - !Ref AWS::StackName
+            - SourceStore
+    SourceStoreReadPolicyArn:
+      Value: !Ref SourceStoreReadPolicy
+      Export:
+        Name: !Join
+          - ":"
+          - - !Ref AWS::StackName
+            - SourceStoreReadPolicyArn
